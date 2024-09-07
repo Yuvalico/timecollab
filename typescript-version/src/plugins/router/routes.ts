@@ -11,7 +11,7 @@ export const routes = [
       },
       {
         path: 'management',
-        component: () => import('@/pages/management.vue'),
+        component: () => import('@/pages/management/management.vue'),
         meta: { requiresAuth: true },
       },
       {

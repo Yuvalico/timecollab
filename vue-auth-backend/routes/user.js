@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const usersQuery = `
-      SELECT u.id, u.first_name, u.last_name, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary
+      SELECT u.id, u.first_name, u.last_name, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary
       FROM users u
       JOIN companies c ON u.company_id = c.company_id
     `;
