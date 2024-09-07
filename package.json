@@ -1,0 +1,17 @@
+{
+  "version": "2.2.2",
+  "private": true,
+  "scripts": {
+    "release": "code -r CHANGELOG.md && node -e \"process.stdin.once('data', () => process.exit())\" && yarn bumpp --all package.json javascript-version/package.json typescript-version/package.json"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "@vue/cli-service": "^5.0.8",
+    "bumpp": "^8.2.1"
+  },
+  "dependencies": {
+    "express-jwt": "^8.4.1",
+    "jwks-rsa": "^3.1.0",
+    "vee-validate": "^4.13.2"
+  }
+}
