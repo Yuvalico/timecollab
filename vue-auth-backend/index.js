@@ -22,7 +22,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);         // Authentication routes
 app.use('/api/companies', companyRoutes); // Company-related routes
 app.use('/api/users', userRoutes);     // User-related routes
-app.use('/api/companies/create-company', companyRoutes);     // User-related routes
+app.use('/api/companies/create-company', companyRoutes);     // Company-related routes
 
 // Start the server
 const PORT = process.env.PORT || 3000;
