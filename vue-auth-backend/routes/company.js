@@ -24,6 +24,62 @@ router.post('/create-company', async (req, res) => {
   }
 });
 
+// Update company route
+router.put('/update-company/:id', async (req, res) => {
+  const { id } = req.params;
+  const { company_name } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE companies 
+       SET company_name = $1 
+       WHERE company_id = $2 RETURNING *`,
+      [company_name, id]
+    );
+
+    res.status(200).json({ message: 'Company updated successfully', company: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// "Remove" company route (soft delete)
+router.put('/remove-company/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'UPDATE companies SET is_active = false WHERE company_id = $1 RETURNING *',
+      [id]
+    );
+
+    res.status(200).json({ message: 'Company removed successfully', company: result.rows[0] });
+  } catch (error) {
+    console.error('Error removing company:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/active', async (req, res) => {
+  try {
+    const activeCompaniesQuery = `
+      SELECT c.company_id, c.company_name, 
+      (SELECT CONCAT(u.first_name, ' ', u.last_name)
+       FROM users u 
+       WHERE u.company_id = c.company_id AND u.role = 'admin'
+       LIMIT 1) AS admin_user
+      FROM companies c
+      WHERE c.is_active = true
+    `;
+    const activeCompaniesResult = await pool.query(activeCompaniesQuery);
+    res.json(activeCompaniesResult.rows);
+  } catch (err) {
+    console.error('Error fetching active companies:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const companiesQuery = `

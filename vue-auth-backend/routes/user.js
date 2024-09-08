@@ -63,10 +63,63 @@ router.post('/create-user', async (req, res) => {
   }
 });
 
+// Update user route
+router.put('/update-user/:id', async (req, res) => {
+  const { id } = req.params;
+  const { first_name, last_name, mobile_phone, email, role, permission, salary, work_capacity } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users 
+       SET first_name = $1, last_name = $2, mobile_phone = $3, email = $4, role = $5, permission = $6, salary = $7, work_capacity = $8 
+       WHERE id = $9 RETURNING *`,
+      [first_name, last_name, mobile_phone, email, role, permission, salary, work_capacity, id]
+    );
+
+    res.status(200).json({ message: 'User updated successfully', user: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// "Remove" user route (soft delete)
+router.put('/remove-user/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'UPDATE users SET is_active = false WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    res.status(200).json({ message: 'User removed successfully', user: result.rows[0] });
+  } catch (error) {
+    console.error('Error removing user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/active', async (req, res) => {
+  try {
+    const usersQuery = `
+      SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary, u.work_capacity
+      FROM users u
+      JOIN companies c ON u.company_id = c.company_id
+      WHERE u.is_active = true
+    `;
+    const usersResult = await pool.query(usersQuery);
+    res.json(usersResult.rows);
+  } catch (err) {
+    console.error('Error fetching active users:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const usersQuery = `
-      SELECT u.id, u.first_name, u.last_name, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary
+      SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary, u.work_capacity
       FROM users u
       JOIN companies c ON u.company_id = c.company_id
     `;

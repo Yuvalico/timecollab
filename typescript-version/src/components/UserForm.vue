@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { ref, onMounted, defineEmits } from 'vue';
+import { ref, onMounted, defineEmits, defineExpose } from 'vue';
 
 // Declare emitted events
-const emit = defineEmits(['userCreated']);
+const emit = defineEmits(['userCreated', 'userUpdated']);
 
 const showForm = ref(false);
+const isEditing = ref(false); // Flag to check if the form is in editing mode
+const userId = ref(null); // To store the user ID when editing
 const firstName = ref('');
 const lastName = ref('');
 const email = ref('');
-const mobile = ref<number | null>(null);
+const mobile_phone = ref<number | null>(null);
 const password = ref<string>('');
 const selectedCompany = ref('');
 const role = ref('');
@@ -37,19 +39,60 @@ async function fetchCompanies() {
 
 onMounted(fetchCompanies);
 
+// Method to open the form for editing a user
+function openForm(user = null) {
+  if (user) {
+    isEditing.value = true;
+    userId.value = user.id;
+    firstName.value = user.first_name;
+    lastName.value = user.last_name;
+    email.value = user.email;
+    mobile_phone.value = user.mobile_phone;
+    password.value = ''; // Password might not be provided directly, depending on your logic
+    selectedCompany.value = user.company_name;
+    role.value = user.role;
+    permission.value = user.permission;
+    salary.value = user.salary;
+    workCapacity.value = user.work_capacity;
+  } else {
+    isEditing.value = false;
+    resetForm();
+  }
+  showForm.value = true;
+}
+
+// Method to reset the form fields
+function resetForm() {
+  firstName.value = '';
+  lastName.value = '';
+  email.value = '';
+  mobile_phone.value = null;
+  password.value = '';
+  selectedCompany.value = '';
+  role.value = '';
+  permission.value = null;
+  salary.value = null;
+  workCapacity.value = null;
+}
+
 // Submit handler
 const submitForm = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/users/create-user', {
-      method: 'POST',
+    const method = isEditing.value ? 'PUT' : 'POST';
+    const url = isEditing.value 
+      ? `http://localhost:3000/api/users/update-user/${userId.value}`
+      : 'http://localhost:3000/api/users/create-user';
+
+    const response = await fetch(url, {
+      method,
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         first_name: firstName.value,
         last_name: lastName.value,
+        mobile_phone: mobile_phone.value,
         email: email.value,
-        mobile: mobile.value,
         password: password.value,
         company_name: selectedCompany.value,
         role: role.value,
@@ -60,21 +103,30 @@ const submitForm = async () => {
     });
 
     if (response.ok) {
-      console.log('User created successfully');
-      emit('userCreated');  // Emit event on success
+      if (isEditing.value) {
+        console.log('User updated successfully');
+        emit('userUpdated');  // Emit event on success
+      } else {
+        console.log('User created successfully');
+        emit('userCreated');  // Emit event on success
+      }
       showForm.value = false; // Close the modal on success
     } else {
-      console.error('Failed to create user');
+      console.error('Failed to submit form');
     }
   } catch (error) {
     console.error('Error submitting form:', error);
   }
 };
+
+defineExpose({
+  openForm,
+});
 </script>
 
 <template>
   <!-- Button to open the form -->
-  <VBtn @click="showForm = true" color="primary">
+  <VBtn @click="openForm()" color="primary">
     + User
   </VBtn>
 
@@ -82,7 +134,7 @@ const submitForm = async () => {
   <VDialog v-model="showForm" persistent max-width="600px">
     <VCard>
       <VCardTitle>
-        <span class="headline">Register a New User</span>
+        <span class="headline">{{ isEditing ? 'Edit User' : 'Register a New User' }}</span>
       </VCardTitle>
 
       <VCardText>
@@ -110,22 +162,22 @@ const submitForm = async () => {
 
             <VCol cols="12">
               <VTextField
-                v-model="email"
-                prepend-inner-icon="ri-mail-line"
-                label="Email"
-                type="email"
-                placeholder="johndoe@example.com"
-                :rules="[requiredRule]"
+                v-model="mobile_phone"
+                prepend-inner-icon="ri-smartphone-line"
+                label="Mobile Phone"
+                placeholder="+1 123 456 7890"
+                type="number"
               />
             </VCol>
 
             <VCol cols="12">
               <VTextField
-                v-model="mobile"
-                prepend-inner-icon="ri-smartphone-line"
-                label="Mobile"
-                placeholder="+1 123 456 7890"
-                type="number"
+                v-model="email"
+                prepend-inner-icon="ri-mail-line"
+                label="Email"
+                type="email"
+                placeholder="johndoe@example.com"
+                :rules="[requiredRule, emailRule]"
               />
             </VCol>
 
@@ -210,7 +262,7 @@ const submitForm = async () => {
               <VBtn
                 type="submit"
               >
-                Submit
+                {{ isEditing ? 'Update' : 'Submit' }}
               </VBtn>
             </VCol>
           </VRow>

@@ -7,7 +7,11 @@
     </thead>
     <tbody>
       <tr v-for="(item, index) in items" :key="index">
-        <td v-for="header in headers" :key="header.value">{{ item[header.value] }}</td>
+        <td v-for="header in headers" :key="header.value">
+          <slot :name="`item.${header.value}`" :item="item">
+            {{ item[header.value] }}
+          </slot>
+        </td>
       </tr>
     </tbody>
   </table>
