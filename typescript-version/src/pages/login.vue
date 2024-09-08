@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import axios from 'axios'  // Add Axios for API calls
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth';
 
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 
@@ -12,6 +13,7 @@ import authV1MaskLight from '@images/pages/auth-v1-mask-light.png'
 import authV1Tree2 from '@images/pages/auth-v1-tree-2.png'
 import authV1Tree from '@images/pages/auth-v1-tree.png'
 
+const authStore = useAuthStore();
 const router = useRouter()
 
 const form = ref({
@@ -40,10 +42,12 @@ const handleLogin = async () => {
       withCredentials: true
     });
 
-    const { token } = response.data;
+    const { token, permission } = response.data;
 
     // Store the JWT token in localStorage
     localStorage.setItem('authToken', token);
+    localStorage.setItem('userPermission', permission);
+    authStore.setUser({ email: form.value.email, permission: permission }, token);
 
     // Redirect to a protected route, e.g., dashboard
     router.push('/dashboard');

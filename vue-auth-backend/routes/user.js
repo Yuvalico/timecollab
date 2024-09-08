@@ -67,13 +67,18 @@ router.post('/create-user', async (req, res) => {
 router.put('/update-user/:id', async (req, res) => {
   const { id } = req.params;
   const { first_name, last_name, mobile_phone, email, role, permission, salary, work_capacity } = req.body;
+  const permissionInt = permissionMap[permission];
+  // Handle invalid permission input
+  if (permissionInt === undefined) {
+    return res.status(400).json({ error: 'Invalid permission type' });
+  }
 
   try {
     const result = await pool.query(
       `UPDATE users 
        SET first_name = $1, last_name = $2, mobile_phone = $3, email = $4, role = $5, permission = $6, salary = $7, work_capacity = $8 
        WHERE id = $9 RETURNING *`,
-      [first_name, last_name, mobile_phone, email, role, permission, salary, work_capacity, id]
+      [first_name, last_name, mobile_phone, email, role, permissionInt, salary, work_capacity, id]
     );
 
     res.status(200).json({ message: 'User updated successfully', user: result.rows[0] });

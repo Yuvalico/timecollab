@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/store/auth';
 import SimpleTable from '@/views/pages/tables/SimpleTable.vue'
 import UserForm from '@/components/UserForm.vue';
 import CompanyForm from '@/components/CompanyForm.vue'
+
+const router = useRouter();
+const authStore = useAuthStore();
+console.log(authStore);
+if (!authStore.isNetAdmin) {
+  router.push('/dashboard'); // Redirect non-admin users to the dashboard
+}
 
 // Refs to store users and companies
 const users = ref([])
