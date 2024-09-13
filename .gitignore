@@ -8,3 +8,4 @@ backend/conda_env/environment.yml
 .vscode/launch.json
 backend/__pycache__/main.cpython-311.pyc
 node_modules/.vue-global-types/vue_3.3_false.d.ts
+backend/.env
