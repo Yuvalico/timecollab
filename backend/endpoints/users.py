@@ -24,7 +24,7 @@ permission_map_to_str = {
 # Create user route
 @users_blueprint.route('/create-user', methods=['POST'])
 def create_user():
-    data: dict = request.get_json()
+    data = request.get_json()
     first_name = data.get('first_name')
     last_name = data.get('last_name')
     email = data.get('email')
@@ -34,16 +34,6 @@ def create_user():
     permission = data.get('permission')
     salary = data.get('salary')
     work_capacity = data.get('work_capacity')
-   
-    print(first_name) 
-    print(last_name) 
-    print(email) 
-    print(password) 
-    print(company_name) 
-    print(role) 
-    print(permission) 
-    print(salary) 
-    print(work_capacity) 
 
     try:
         permission_int = permission_map_to_int.get(permission)
@@ -73,7 +63,7 @@ def create_user():
         cursor.execute('''
             INSERT INTO users (email, first_name, last_name, company_id, role, permission, pass_hash, is_active, salary, work_capacity)
             VALUES (%s, %s, %s, %s, %s, %s, %s, true, %s, %s) RETURNING *
-        ''' , (email, first_name, last_name, company_id, role, permission_int, hashed_password.decode('utf-8'), salary, work_capacity))
+        ''', (email, first_name, last_name, company_id, role, permission_int, hashed_password.decode('utf-8'), salary, work_capacity))
         new_user = cursor.fetchone()
         conn.commit()
 
@@ -88,7 +78,7 @@ def create_user():
         conn.close()
 
 # Update user route
-@users_blueprint.route('/update-user/<int:id>', methods=['PUT'])
+@users_blueprint.route('/update-user/<uuid:id>', methods=['PUT'])
 def update_user(id):
     data = request.get_json()
     first_name = data.get('first_name')
@@ -131,8 +121,8 @@ def update_user(id):
         cursor.close()
         conn.close()
 
-# "Remove" user route (soft delete)
-@users_blueprint.route('/remove-user/<int:id>', methods=['PUT'])
+# Remove user route (soft delete)
+@users_blueprint.route('/remove-user/<uuid:id>', methods=['PUT'])
 def remove_user(id):
     conn = get_db_connection(current_app.config)
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -164,7 +154,7 @@ def get_active_users():
 
     try:
         cursor.execute('''
-            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary, u.work_capacity
+            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.is_active, u.salary, u.work_capacity
             FROM users u
             JOIN companies c ON u.company_id = c.company_id
             WHERE u.is_active = true
@@ -195,7 +185,7 @@ def get_all_users():
 
     try:
         cursor.execute('''
-            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.pass_hash, u.is_active, u.salary, u.work_capacity
+            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.is_active, u.salary, u.work_capacity
             FROM users u
             JOIN companies c ON u.company_id = c.company_id
         ''')
