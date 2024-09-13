@@ -27,6 +27,7 @@ const userHeaders = [
   { text: 'Role', value: 'role' },
   { text: 'Salary', value: 'salary' },
   { text: 'Work Capacity', value: 'work_capacity' },
+  { text: 'Permission', value: 'permission' },
   { text: '', value: 'actions', align: 'center', sortable: false },
 ];
 
