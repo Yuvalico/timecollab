@@ -16,4 +16,4 @@ app.register_blueprint(companies_blueprint, url_prefix='/companies')
 app.register_blueprint(users_blueprint, url_prefix='/users')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=3000)
