@@ -26,7 +26,7 @@ const emailRule = (value) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
 // Fetch companies from the API
 async function fetchCompanies() {
   try {
-    const response = await fetch('http://localhost:3000/api/companies');
+    const response = await fetch('http://localhost:3000/api/companies/active');
     const data = await response.json();
 
     companies.value = data.map(company => company.company_name);
