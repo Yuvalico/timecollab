@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from endpoints.auth import auth_blueprint
 from endpoints.companies import companies_blueprint 
 from endpoints.users import users_blueprint
@@ -10,7 +11,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
-# app.config['SECRET_KEY'] = 'your_jwt_secret_key'  # Replace this with a real secret key
+
+# Enable CORS and allow credentials
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
 
 # Register the blueprints
 app.register_blueprint(auth_blueprint, url_prefix='/auth')
