@@ -1,7 +1,8 @@
-<script setup lang="ts">
+<script setup>
 import { useRouter } from 'vue-router';
-import avatar1 from '@images/avatars/avatar-1.png'
+import avatar1 from '@images/avatars/avatar-1.png';
 const router = useRouter();
+
 const logout = () => {
   // Clear the JWT token from localStorage
   localStorage.removeItem('authToken');

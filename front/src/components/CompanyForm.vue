@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, defineExpose } from 'vue';
 
 const showForm = ref(false);
@@ -8,7 +8,7 @@ const isEditing = ref(false);
 let editingCompanyId = null;
 
 const rules = {
-  required: (value: string) => !!value || 'Required.',
+  required: (value) => !!value || 'Required.',
 };
 
 const emit = defineEmits(['companyCreated', 'companyUpdated']);

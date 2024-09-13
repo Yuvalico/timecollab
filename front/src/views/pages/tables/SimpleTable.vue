@@ -8,6 +8,7 @@
     <tbody>
       <tr v-for="(item, index) in items" :key="index">
         <td v-for="header in headers" :key="header.value">
+          <!-- Use default slot content if no slot is provided -->
           <slot :name="`item.${header.value}`" :item="item">
             {{ item[header.value] }}
           </slot>
@@ -17,11 +18,11 @@
   </table>
 </template>
 
-<script setup lang="ts">
-const { headers, items } = defineProps<{
-  headers: Array<{ text: string, value: string }>,
-  items: Array<any>
-}>();
+<script setup>
+const props = defineProps({
+  headers: Array,
+  items: Array
+});
 </script>
 
 <style scoped>

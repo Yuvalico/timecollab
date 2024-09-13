@@ -71,7 +71,6 @@
     "sass": "1.76.0"
   },
   "overrides": {
-    "stylelint-order": "6.0.3",
-    "sass": "1.76.0"
+    "stylelint-order": "6.0.3"
   }
 }

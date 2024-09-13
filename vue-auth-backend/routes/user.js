@@ -5,10 +5,16 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 
 // Permission map
-const permissionMap = {
+const permissionMapToInt = {
   'Net Admin': 0,
   'Employer': 1,
   'Employee': 2,
+};
+
+const permissionMapToStr = {
+  0: 'Net Admin',
+  1: 'Employer',
+  2: 'Employee',
 };
 
 // route to create a user
@@ -26,7 +32,7 @@ router.post('/create-user', async (req, res) => {
   } = req.body;
 
   try {
-    const permissionInt = permissionMap[permission];
+    const permissionInt = permissionMapToInt[permission];
     // Handle invalid permission input
     if (permissionInt === undefined) {
       return res.status(400).json({ error: 'Invalid permission type' });
@@ -67,7 +73,7 @@ router.post('/create-user', async (req, res) => {
 router.put('/update-user/:id', async (req, res) => {
   const { id } = req.params;
   const { first_name, last_name, mobile_phone, email, role, permission, salary, work_capacity } = req.body;
-  const permissionInt = permissionMap[permission];
+  const permissionInt = permissionMapToInt[permission];
   // Handle invalid permission input
   if (permissionInt === undefined) {
     return res.status(400).json({ error: 'Invalid permission type' });
@@ -114,7 +120,12 @@ router.get('/active', async (req, res) => {
       WHERE u.is_active = true
     `;
     const usersResult = await pool.query(usersQuery);
-    res.json(usersResult.rows);
+    const usersWithMappedPermissions = usersResult.rows.map(user => ({
+      ...user,
+      permission: permissionMapToStr[user.permission] || 'Unknown',  // Map the permission integer to string
+    }));
+
+    res.json(usersWithMappedPermissions);
   } catch (err) {
     console.error('Error fetching active users:', err);
     res.status(500).json({ error: 'Internal server error' });

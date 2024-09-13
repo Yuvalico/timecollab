@@ -1,21 +1,22 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
-import SimpleTable from '@/views/pages/tables/SimpleTable.vue'
+import SimpleTable from '@/views/pages/tables/SimpleTable.vue';
 import UserForm from '@/components/UserForm.vue';
-import CompanyForm from '@/components/CompanyForm.vue'
+import CompanyForm from '@/components/CompanyForm.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 console.log(authStore);
+
 if (!authStore.isNetAdmin) {
   router.push('/dashboard'); // Redirect non-admin users to the dashboard
 }
 
 // Refs to store users and companies
-const users = ref([])
-const companies = ref([])
-const companiesWithAdmins = ref([])
+const users = ref([]);
+const companies = ref([]);
+const companiesWithAdmins = ref([]);
 
 // Headers for tables
 const userHeaders = [
@@ -27,13 +28,13 @@ const userHeaders = [
   { text: 'Salary', value: 'salary' },
   { text: 'Work Capacity', value: 'work_capacity' },
   { text: '', value: 'actions', align: 'center', sortable: false },
-]
+];
 
 const companyHeaders = [
   { text: 'Company Name', value: 'companyName' },
   { text: 'Admin User', value: 'adminUser' },
   { text: '', value: 'actions', align: 'center', sortable: false },
-]
+];
 
 // Fetch users from the API
 async function fetchUsers() {
@@ -79,7 +80,7 @@ async function fetchCompanies() {
 }
 
 // Helper functions
-function getAdminUser(companyID: string) {
+function getAdminUser(companyID) {
   console.log('Looking for admin in companyID:', companyID);
   
   // Find the admin user with the matching companyID
@@ -92,7 +93,7 @@ function getAdminUser(companyID: string) {
 }
 
 function editUser(user) {
-  console.log("editing user: ", user);
+  console.log("Editing user: ", user);
   // Use ref method to open the form with pre-filled data
   userFormRef.value.openForm(user);
   // Refresh the users list after editing
@@ -150,7 +151,7 @@ const removeCompany = async (company) => {
 onMounted(() => {
   fetchUsers();
   fetchCompanies();
-})
+});
 </script>
 
 <template>

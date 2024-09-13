@@ -1,36 +1,36 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTheme } from 'vuetify'
-import axios from 'axios'  // Add Axios for API calls
-import { useRouter } from 'vue-router'
+<script setup>
+import { ref, computed } from 'vue';
+import { useTheme } from 'vuetify';
+import axios from 'axios';  // Add Axios for API calls
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
+import AuthProvider from '@/views/pages/authentication/AuthProvider.vue';
 
-import logo from '@images/logo.svg?raw'
-import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png'
-import authV1MaskLight from '@images/pages/auth-v1-mask-light.png'
-import authV1Tree2 from '@images/pages/auth-v1-tree-2.png'
-import authV1Tree from '@images/pages/auth-v1-tree.png'
+import logo from '@images/logo.svg?raw';
+import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png';
+import authV1MaskLight from '@images/pages/auth-v1-mask-light.png';
+import authV1Tree2 from '@images/pages/auth-v1-tree-2.png';
+import authV1Tree from '@images/pages/auth-v1-tree.png';
 
 const authStore = useAuthStore();
-const router = useRouter()
+const router = useRouter();
 
 const form = ref({
   email: '',
   password: '',
   remember: false,
-})
+});
 
-const vuetifyTheme = useTheme()
+const vuetifyTheme = useTheme();
 
 const authThemeMask = computed(() => {
   return vuetifyTheme.global.name.value === 'light'
     ? authV1MaskLight
-    : authV1MaskDark
-})
+    : authV1MaskDark;
+});
 
-const isPasswordVisible = ref(false)
+const isPasswordVisible = ref(false);
 
 // New function to handle login
 const handleLogin = async () => {

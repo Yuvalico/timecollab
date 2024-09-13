@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup>
 import { ref, onMounted, defineEmits, defineExpose } from 'vue';
 
 // Declare emitted events
@@ -10,18 +10,18 @@ const userId = ref(null); // To store the user ID when editing
 const firstName = ref('');
 const lastName = ref('');
 const email = ref('');
-const mobile_phone = ref<number | null>(null);
-const password = ref<string>('');
+const mobile_phone = ref(null);
+const password = ref('');
 const selectedCompany = ref('');
 const role = ref('');
-const permission = ref<number | null>(null);
-const salary = ref<number | null>(null);
-const workCapacity = ref<number | null>(null);
+const permission = ref(null);
+const salary = ref(null);
+const workCapacity = ref(null);
 const companies = ref([]); // To hold the list of companies fetched from API
 
 const permissions = ref(['Net Admin', 'Employer', 'Employee']);
-const requiredRule = (value: string) => !!value || 'Required';
-const emailRule = (value: string) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
+const requiredRule = (value) => !!value || 'Required';
+const emailRule = (value) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
 
 // Fetch companies from the API
 async function fetchCompanies() {
@@ -83,6 +83,20 @@ const submitForm = async () => {
       ? `http://localhost:3000/api/users/update-user/${userId.value}`
       : 'http://localhost:3000/api/users/create-user';
 
+    // Log data to be sent
+    console.log({
+      first_name: firstName.value,
+      last_name: lastName.value,
+      mobile_phone: mobile_phone.value,
+      email: email.value,
+      password: password.value, // Ensure password is sent when creating a user
+      company_name: selectedCompany.value,
+      role: role.value,
+      permission: permission.value,
+      salary: salary.value,
+      work_capacity: workCapacity.value,
+    });
+
     const response = await fetch(url, {
       method,
       headers: {
@@ -113,6 +127,8 @@ const submitForm = async () => {
       showForm.value = false; // Close the modal on success
     } else {
       console.error('Failed to submit form');
+      const errorData = await response.json();
+      console.error('Error details:', errorData);
     }
   } catch (error) {
     console.error('Error submitting form:', error);
