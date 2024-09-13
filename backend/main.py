@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Enable CORS and allow credentials
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
 
 # Register the blueprints
 app.register_blueprint(auth_blueprint, url_prefix='/auth')

@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify, current_app
-import psycopg2
+import psycopg2 
+import psycopg2.extras
 from psycopg2.extras import RealDictCursor
 import bcrypt
 from cmn_utils import *
+psycopg2.extras.register_uuid() 
 
 users_blueprint = Blueprint('users', __name__)
 
@@ -71,7 +73,7 @@ def create_user():
         cursor.execute('''
             INSERT INTO users (email, first_name, last_name, company_id, role, permission, pass_hash, is_active, salary, work_capacity)
             VALUES (%s, %s, %s, %s, %s, %s, %s, true, %s, %s) RETURNING *
-        ''' % (email, first_name, last_name, company_id, role, permission_int, hashed_password.decode('utf-8'), salary, work_capacity))
+        ''' , (email, first_name, last_name, company_id, role, permission_int, hashed_password.decode('utf-8'), salary, work_capacity))
         new_user = cursor.fetchone()
         conn.commit()
 
