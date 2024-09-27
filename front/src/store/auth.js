@@ -25,5 +25,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.token,
     isNetAdmin: (state) => state.userPermission === 0,
+    isEmployer: (state) => state.userPermission === 1,
+    isEmployee: (state) => state.userPermission === 2,
   },
 });

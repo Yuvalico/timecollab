@@ -1,14 +1,11 @@
 from flask import Blueprint, request, jsonify, current_app
-import psycopg2 
-import psycopg2.extras
-from psycopg2.extras import RealDictCursor
+from models import User, Company, db  
 import bcrypt
 from cmn_utils import *
-psycopg2.extras.register_uuid() 
 
 users_blueprint = Blueprint('users', __name__)
 
-# Permission maps (same as in your JavaScript)
+# Permission maps
 permission_map_to_int = {
     'Net Admin': 0,
     'Employer': 1,
@@ -40,42 +37,40 @@ def create_user():
         if permission_int is None:
             return jsonify({'error': 'Invalid permission type'}), 400
 
-        conn = get_db_connection(current_app.config)
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Check if user already exists
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-        existing_user = cursor.fetchone()
+        # Check if user already exists using SQLAlchemy
+        existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return jsonify({'error': 'User already exists'}), 400
 
-        # Get the company_id
-        cursor.execute('SELECT company_id FROM companies WHERE company_name = %s', (company_name,))
-        company_result = cursor.fetchone()
-        if not company_result:
+        # Get the company_id using SQLAlchemy
+        company = Company.query.filter_by(company_name=company_name).first()
+        if not company:
             return jsonify({'error': 'Company not found'}), 404
-        company_id = company_result['company_id']
 
-        # Hash the password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        # Create new user object
+        new_user = User(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            company_id=company.company_id,  # Associate with the company
+            role=role,
+            permission=permission_int,
+            pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
+            is_active=True,
+            salary=salary,
+            work_capacity=work_capacity
+        )
 
-        # Insert new user
-        cursor.execute('''
-            INSERT INTO users (email, first_name, last_name, company_id, role, permission, pass_hash, is_active, salary, work_capacity)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, true, %s, %s) RETURNING *
-        ''', (email, first_name, last_name, company_id, role, permission_int, hashed_password.decode('utf-8'), salary, work_capacity))
-        new_user = cursor.fetchone()
-        conn.commit()
+        # Add and commit using SQLAlchemy
+        db.session.add(new_user)
+        db.session.commit()
 
-        return jsonify({'message': 'User registered successfully', 'user': new_user}), 201
+        return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201 
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        print_exception(e)
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Update user route
 @users_blueprint.route('/update-user/<uuid:id>', methods=['PUT'])
@@ -95,108 +90,96 @@ def update_user(id):
         if permission_int is None:
             return jsonify({'error': 'Invalid permission type'}), 400
 
-        conn = get_db_connection(current_app.config)
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Update the user
-        cursor.execute('''
-            UPDATE users 
-            SET first_name = %s, last_name = %s, mobile_phone = %s, email = %s, role = %s, permission = %s, salary = %s, work_capacity = %s 
-            WHERE id = %s RETURNING *
-        ''', (first_name, last_name, mobile_phone, email, role, permission_int, salary, work_capacity, id))
-
-        updated_user = cursor.fetchone()
-        conn.commit()
-
-        if not updated_user:
+        # Get the user using SQLAlchemy
+        user = User.query.get(id)
+        if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        return jsonify({'message': 'User updated successfully', 'user': updated_user}), 200
+        # Update user attributes
+        user.first_name = first_name
+        user.last_name = last_name
+        user.mobile_phone = mobile_phone
+        user.email = email
+        user.role = role
+        user.permission = permission_int
+        user.salary = salary
+        user.work_capacity = work_capacity
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        # Commit changes using SQLAlchemy
+        db.session.commit()
+
+        return jsonify({'message': 'User updated successfully', 'user': user.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print_exception(e)
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Remove user route (soft delete)
 @users_blueprint.route('/remove-user/<uuid:id>', methods=['PUT'])
 def remove_user(id):
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        # Soft delete user
-        cursor.execute('UPDATE users SET is_active = false WHERE id = %s RETURNING *', (id,))
-        removed_user = cursor.fetchone()
-        conn.commit()
-
-        if not removed_user:
+        # Soft delete user using SQLAlchemy
+        user = User.query.get(id)
+        if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        return jsonify({'message': 'User removed successfully', 'user': removed_user}), 200
+        user.is_active = False
+        db.session.commit()
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify({'message': 'User removed successfully', 'user': user.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print_exception(e)
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Get active users route
 @users_blueprint.route('/active', methods=['GET'])
 def get_active_users():
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        cursor.execute('''
-            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.is_active, u.salary, u.work_capacity
-            FROM users u
-            JOIN companies c ON u.company_id = c.company_id
-            WHERE u.is_active = true
-        ''')
-        active_users = cursor.fetchall()
+        # Query active users using SQLAlchemy and join with companies
+        active_users = (
+            db.session.query(User, Company)
+            .join(Company, User.company_id == Company.company_id)
+            .filter(User.is_active == True)
+            .all()
+        )
 
-        # Map permission integers to strings
-        users_with_mapped_permissions = []
-        for user in active_users:
-            user['permission'] = permission_map_to_str.get(user['permission'], 'Unknown')
-            users_with_mapped_permissions.append(user)
+        # Format the results
+        user_data = []
+        for user, company in active_users:
+            user_dict = user.to_dict()  # Assuming you have a to_dict() method
+            user_dict['company_name'] = company.company_name
+            user_dict['permission'] = permission_map_to_str.get(user.permission, 'Unknown')
+            user_data.append(user_dict)
 
-        return jsonify(users_with_mapped_permissions), 200
+        return jsonify(user_data), 200
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+    except Exception as e:
+        print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Get all users route
 @users_blueprint.route('/', methods=['GET'])
 def get_all_users():
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        cursor.execute('''
-            SELECT u.id, u.first_name, u.last_name, u.mobile_phone, u.email, u.company_id, c.company_name, u.role, u.permission, u.is_active, u.salary, u.work_capacity
-            FROM users u
-            JOIN companies c ON u.company_id = c.company_id
-        ''')
-        all_users = cursor.fetchall()
+        # Query all users using SQLAlchemy and join with companies
+        all_users = (
+            db.session.query(User, Company)
+            .join(Company, User.company_id == Company.company_id)
+            .all()
+        )
 
-        return jsonify(all_users), 200
+        # Format the results
+        user_data = []
+        for user, company in all_users:
+            user_dict = user.to_dict()
+            user_dict['company_name'] = company.company_name
+            user_data.append(user_dict)
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify(user_data), 200
+
+    except Exception as e:
+        print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()

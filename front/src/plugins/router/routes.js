@@ -15,6 +15,11 @@ export const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'employerManagement',
+        component: () => import('@/pages/employerManagement/employerManagement.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'account-settings',
         component: () => import('@/pages/account-settings.vue'),
       },

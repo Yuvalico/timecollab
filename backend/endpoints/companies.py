@@ -1,8 +1,6 @@
-from flask import Blueprint, request, jsonify, current_app
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from flask import Blueprint, request, jsonify
+from models import Company, User, db  # Import your models
 from cmn_utils import *
-
 
 companies_blueprint = Blueprint('companies', __name__)
 
@@ -12,30 +10,25 @@ def create_company():
     data = request.get_json()
     company_name = data.get('company_name')
 
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        # Check if company already exists
-        cursor.execute('SELECT * FROM companies WHERE company_name = %s', (company_name,))
-        existing_company = cursor.fetchone()
+        # Check if company already exists using SQLAlchemy
+        existing_company = Company.query.filter_by(company_name=company_name).first()
         if existing_company:
             return jsonify({'error': 'Company already exists'}), 400
 
-        # Insert new company
-        cursor.execute('INSERT INTO companies (company_name) VALUES (%s) RETURNING *', (company_name,))
-        new_company = cursor.fetchone()
-        conn.commit()  # Commit the changes
+        # Create new company object
+        new_company = Company(company_name=company_name)
 
-        return jsonify({'message': 'Company created successfully', 'company': new_company}), 201
+        # Add and commit using SQLAlchemy
+        db.session.add(new_company)
+        db.session.commit()
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify({'message': 'Company created successfully', 'company': new_company.to_dict()}), 201
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of an error
+        print_exception(e)  # Assuming you have a print_exception function
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Update company route
 @companies_blueprint.route('/update-company/<string:id>', methods=['PUT'])
@@ -43,104 +36,112 @@ def update_company(id):
     data = request.get_json()
     company_name = data.get('company_name')
 
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        # Update company
-        cursor.execute('UPDATE companies SET company_name = %s WHERE company_id = %s RETURNING *', (company_name, id))
-        updated_company = cursor.fetchone()
-        conn.commit()
-
-        if not updated_company:
+        # Get the company using SQLAlchemy
+        company = Company.query.get(id)
+        if not company:
             return jsonify({'error': 'Company not found'}), 404
 
-        return jsonify({'message': 'Company updated successfully', 'company': updated_company}), 200
+        # Update company name
+        company.company_name = company_name
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        # Commit changes using SQLAlchemy
+        db.session.commit()
+
+        return jsonify({'message': 'Company updated successfully', 'company': company.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print_exception(e)
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # "Remove" company route (soft delete)
-@companies_blueprint.route('/remove-company/<string:id>', methods=['PUT'])
+@companies_blueprint.route('/remove-company/<string:id>', methods=['PUT'])  # Changed to PUT for soft delete
 def remove_company(id):
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        # Soft delete company
-        cursor.execute('UPDATE companies SET is_active = false WHERE company_id = %s RETURNING *', (id,))
-        removed_company = cursor.fetchone()
-        conn.commit()
-
-        if not removed_company:
+        # Soft delete company using SQLAlchemy
+        company = Company.query.get(id)
+        if not company:
             return jsonify({'error': 'Company not found'}), 404
 
-        return jsonify({'message': 'Company removed successfully', 'company': removed_company}), 200
+        company.is_active = False
+        db.session.commit()
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify({'message': 'Company removed successfully', 'company': company.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print_exception(e)
         return jsonify({'error': 'Server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Get active companies route
 @companies_blueprint.route('/active', methods=['GET'])
 def get_active_companies():
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        cursor.execute('''
-            SELECT c.company_id, c.company_name, 
-            (SELECT CONCAT(u.first_name, ' ', u.last_name)
-             FROM users u 
-             WHERE u.company_id = c.company_id AND u.role = 'admin'
-             LIMIT 1) AS admin_user
-            FROM companies c
-            WHERE c.is_active = true
-        ''')
-        active_companies = cursor.fetchall()
+        # Query active companies using SQLAlchemy and join with users to get the admin
+        active_companies = (
+            db.session.query(Company)
+            .filter_by(is_active=True)
+            .outerjoin(User, (User.company_id == Company.company_id) & (User.role == 'admin'))
+            .all()
+        )
 
-        return jsonify(active_companies), 200
+        # Format the results
+        company_data = []
+        for company in active_companies:
+            company_dict = company.to_dict()
+            admin_user = company.users[0] if company.users else None  # Get the first admin user or None
+            company_dict['admin_user'] = admin_user.to_dict() if admin_user else None
+            company_data.append(company_dict)
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify(company_data), 200
+
+    except Exception as e:
+        print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
-
-    finally:
-        cursor.close()
-        conn.close()
 
 # Get all companies route
 @companies_blueprint.route('/', methods=['GET'])
 def get_all_companies():
-    conn = get_db_connection(current_app.config)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
-        cursor.execute('''
-            SELECT c.company_id, c.company_name, 
-            (SELECT CONCAT(u.first_name, ' ', u.last_name)
-             FROM users u 
-             WHERE u.company_id = c.company_id AND u.role = 'admin'
-             LIMIT 1) AS admin_user
-            FROM companies c
-        ''')
-        all_companies = cursor.fetchall()
+        # Query all companies using SQLAlchemy and join with users to get the admin
+        all_companies = (
+            db.session.query(Company)
+            .outerjoin(User, (User.company_id == Company.company_id) & (User.role == 'admin'))
+            .all()
+        )
 
-        return jsonify(all_companies), 200
+        # Format the results
+        company_data = []
+        for company in all_companies:
+            company_dict = company.to_dict()
+            admin_user = company.users[0] if company.users else None
+            company_dict['admin_user'] = admin_user.to_dict() if admin_user else None
+            company_data.append(company_dict)
 
-    except (Exception, psycopg2.Error) as error:
-        print_exception(error)
+        return jsonify(company_data), 200
+
+    except Exception as e:
+        print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
 
-    finally:
-        cursor.close()
-        conn.close()
+@companies_blueprint.route('/<string:company_id>/users')
+def get_company_users(company_id):
+    try:
+        # Query the company by its ID
+        company = Company.query.get(company_id)
+
+        # Check if the company exists
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        # Get all users associated with the company
+        users = User.query.filter_by(company_id=company_id).all()
+
+        # Convert the users to dictionaries and include them in the response
+        user_data = [user.to_dict() for user in users]
+        return jsonify(user_data), 200
+
+    except Exception as e:
+        # Handle any unexpected errors
+        return jsonify({'error': str(e)}), 500
