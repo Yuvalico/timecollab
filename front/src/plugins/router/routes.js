@@ -20,6 +20,11 @@ export const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'timewatch',
+        component: () => import('@/pages/Timewatch.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'account-settings',
         component: () => import('@/pages/account-settings.vue'),
       },

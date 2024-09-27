@@ -71,6 +71,12 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/employerManagement',
     }"
     />
+  <VerticalNavLink
+    :item="{
+      title: 'TimeWatch',
+      to: '/timewatch',
+    }"
+    />
   <VerticalNavGroup
     :item="{
       title: 'Front Pages',
