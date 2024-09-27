@@ -2,6 +2,7 @@
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Computed
 
 db = SQLAlchemy()
 
@@ -50,4 +51,55 @@ class User(db.Model):
             'is_active': self.is_active,
             'salary': str(self.salary) if self.salary else None,  # Handle potential None values
             'work_capacity': str(self.work_capacity) if self.work_capacity else None
+        }
+        
+class TimeStamp(db.Model):
+    __tablename__ = 'time_stamps'
+    uuid = db.Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.uuid_generate_v4()
+    )
+    user_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey('users.id')
+    )
+    entered_by = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey('users.id')
+    )
+    punch_type = db.Column(db.Integer)
+    punch_in_timestamp = db.Column(db.DateTime(timezone=True))
+    punch_out_timestamp = db.Column(db.DateTime(timezone=True))
+    reporting_type = db.Column(db.String)
+    detail = db.Column(db.Text)
+    total_work_time = db.Column(
+        db.Interval,
+        Computed('punch_out_timestamp - punch_in_timestamp', persisted=True),
+        nullable=True
+    )
+    last_update = db.Column(
+        db.DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    entered_by_user = db.relationship(
+        'User',
+        foreign_keys=[entered_by],
+        backref='entered_timestamps'
+    )
+
+    def to_dict(self):
+        return {
+            'uuid': str(self.uuid),
+            'user_id': str(self.user_id),
+            'entered_by': str(self.entered_by),
+            'punch_type': self.punch_type,
+            'punch_in_timestamp': self.punch_in_timestamp.isoformat() if self.punch_in_timestamp else None,
+            'punch_out_timestamp': self.punch_out_timestamp.isoformat() if self.punch_out_timestamp else None,
+            'reporting_type': self.reporting_type,
+            'detail': self.detail,
+            'total_work_time': str(self.total_work_time) if self.total_work_time else None,
+            'last_update': self.last_update.isoformat() if self.last_update else None,
         }
