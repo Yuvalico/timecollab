@@ -183,3 +183,17 @@ def get_all_users():
     except Exception as e:
         print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
+
+@users_blueprint.route('/get-user-by-email/<string:email>', methods=['GET'])
+def get_user_by_email(email):
+    try:
+        # Query the user by email
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        return jsonify(user.to_dict()), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

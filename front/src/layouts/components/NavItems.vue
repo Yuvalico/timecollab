@@ -65,6 +65,12 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/management',
     }"
     />
+  <VerticalNavLink
+    :item="{
+      title: 'employerManagement',
+      to: '/employerManagement',
+    }"
+    />
   <VerticalNavGroup
     :item="{
       title: 'Front Pages',

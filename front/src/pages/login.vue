@@ -43,11 +43,20 @@ const handleLogin = async () => {
     });
 
     const { token, permission } = response.data;
-
+    const user_details = await axios.get('http://localhost:3000/api/users/get-user-by-email/' + form.value.email)
+    const user_data = user_details.data
     // Store the JWT token in localStorage
     localStorage.setItem('authToken', token);
     localStorage.setItem('userPermission', permission);
-    authStore.setUser({ email: form.value.email, permission: permission }, token);
+    authStore.setUser({ email: form.value.email, 
+                        id: user_data.id,
+                        f_name: user_data.first_name, 
+                        l_name: user_data.last_name, 
+                        permission: permission 
+                      }, 
+                      token);
+    
+    console.log(authStore.user.id, authStore.user.f_name, authStore.user.l_name)
 
     // Redirect to a protected route, e.g., dashboard
     router.push('/dashboard');

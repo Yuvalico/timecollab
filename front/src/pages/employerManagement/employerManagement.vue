@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import SimpleTable from '@/views/pages/tables/SimpleTable.vue';
 import UserForm from '@/components/UserForm.vue';
-import CompanyForm from '@/components/CompanyForm.vue';
+// import CompanyForm from '@/components/CompanyForm.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -15,8 +15,8 @@ if (!authStore.isEmployer) {
 
 // Refs to store users and companies
 const users = ref([]);
-const companies = ref([]);
-const companiesWithAdmins = ref([]);
+// const companies = ref([]);
+// const companiesWithAdmins = ref([]);
 
 // Headers for tables
 const userHeaders = [
@@ -46,8 +46,8 @@ async function fetchUsers() {
       ...user,
       fullName: `${user.first_name} ${user.last_name}`,
       actions: {
-        edit: () => editUser(user),
-        remove: () => removeUser(user),
+        // edit: () => editUser(user),
+        // remove: () => removeUser(user),
       },
     }));
 
@@ -57,29 +57,29 @@ async function fetchUsers() {
   }
 }
 
-// Fetch companies from the API
-async function fetchCompanies() {
-  try {
-    const companyResponse = await fetch('http://localhost:3000/api/companies/active');
-    companies.value = (await companyResponse.json()).map(company => ({
-      ...company,
-      companyName: company.company_name,
-      actions: {
-        edit: () => editCompany(company),
-        remove: () => removeCompany(company),
-      },
-    }));
+// // Fetch companies from the API
+// async function fetchCompanies() {
+//   try {
+//     const companyResponse = await fetch('http://localhost:3000/api/companies/active');
+//     companies.value = (await companyResponse.json()).map(company => ({
+//       ...company,
+//       companyName: company.company_name,
+//       actions: {
+//         edit: () => editCompany(company),
+//         remove: () => removeCompany(company),
+//       },
+//     }));
 
     // Map companies to include admin user
-    companiesWithAdmins.value = companies.value.map(company => ({
-      companyName: company.company_name,
-      adminUser: getAdminUser(company.company_id),
-      actions: company.actions,
-    }));
-  } catch (error) {
-    console.error('Error fetching companies:', error);
-  }
-}
+//     companiesWithAdmins.value = companies.value.map(company => ({
+//       companyName: company.company_name,
+//       adminUser: getAdminUser(company.company_id),
+//       actions: company.actions,
+//     }));
+//   } catch (error) {
+//     console.error('Error fetching companies:', error);
+//   }
+// }
 
 // Helper functions
 function getAdminUser(companyID) {
@@ -122,37 +122,37 @@ const removeUser = async (user) => {
   }
 };
 
-function editCompany(company) {
-  console.log("Editing company: ", company);
-  companyFormRef.value.openForm(company);
-  // Refresh the companies list after editing
-  fetchCompanies();
-}
+// function editCompany(company) {
+//   console.log("Editing company: ", company);
+//   companyFormRef.value.openForm(company);
+//   // Refresh the companies list after editing
+//   fetchCompanies();
+// }
 
 const companyFormRef = ref(null); // Ref for the CompanyForm component
 
-const removeCompany = async (company) => {
-  try {
-    const response = await fetch(`http://localhost:3000/api/companies/remove-company/${company.company_id}`, {
-      method: 'PUT',
-    });
+// const removeCompany = async (company) => {
+//   try {
+//     const response = await fetch(`http://localhost:3000/api/companies/remove-company/${company.company_id}`, {
+//       method: 'PUT',
+//     });
 
-    if (response.ok) {
-      console.log('Company removed successfully');
-      // Refresh the companies list after removal
-      fetchCompanies();
-    } else {
-      console.error('Failed to remove company');
-    }
-  } catch (error) {
-    console.error('Error removing company:', error);
-  }
-};
+//     if (response.ok) {
+//       console.log('Company removed successfully');
+//       // Refresh the companies list after removal
+//       fetchCompanies();
+//     } else {
+//       console.error('Failed to remove company');
+//     }
+//   } catch (error) {
+//     console.error('Error removing company:', error);
+//   }
+// };
 
 // Fetch data on component mount
 onMounted(() => {
   fetchUsers();
-  fetchCompanies();
+  // fetchCompanies();
 });
 </script>
 
