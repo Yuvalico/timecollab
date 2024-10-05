@@ -63,7 +63,7 @@ def get_timestamps():
         print_exception(error)
         return jsonify({'error': 'Internal server error'}), 500
 
-@timestamps_bp.route('/punch_out', methods=['POST'])
+@timestamps_bp.route('/', methods=['PUT'])
 @jwt_required() 
 def punch_out():
     try:

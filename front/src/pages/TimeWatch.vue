@@ -38,7 +38,7 @@ async function punchIn() {
 
 async function punchOut() {
   try {
-    const response = await api.post(`${endpoints.timestamps.punchOut}`, {
+    const response = await api.put(`${endpoints.timestamps.punchOut}`, {
       user_id: authStore.user.id,
       entered_by: authStore.user.id,
       reporting_type: null,
