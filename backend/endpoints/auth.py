@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from werkzeug.security import check_password_hash
-import jwt
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 from models import User
 import bcrypt
 import datetime
@@ -17,7 +16,7 @@ def login():
 
     try:
         # Query the user using SQLAlchemy
-        user = User.query.filter_by(email=email).first()
+        user: User = User.query.filter_by(email=email).first()
 
         # If user is not found or password hash is missing
         if not user:
@@ -29,43 +28,60 @@ def login():
         if not bcrypt.checkpw(password.encode('utf-8'), user.pass_hash.encode('utf-8')):
             return jsonify({'error': 'Invalid credentials'}), 400
 
-        # Generate JWT token
-        token = jwt.encode(
-            {
-                'email': user.email, 
-                'permission': user.permission,
-                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)  # Token expires in 1 hour
-            },
-            current_app.config["SECRET_KEY"],
-            algorithm='HS256'
-        )
+        # Generate access and refresh tokens using Flask-JWT-Extended
+        additional_claims = {
+            'permission': user.permission,  # Include the user's permission in the token
+            'company_id': user.company_id  # Include the user's permission in the token
+        }
+        access_token = create_access_token(identity=user.email, fresh=True, additional_claims=additional_claims)
+        refresh_token = create_refresh_token(identity=user.email)
 
-        return jsonify({'token': token, 'permission': user.permission}), 200
+        return jsonify({
+            'access_token': access_token, 
+            'refresh_token': refresh_token,
+            'permission': user.permission,
+            'company_id': user.company_id
+        }), 200
 
     except Exception as e:
         # Handle exceptions gracefully (you can customize this)
         print_exception(e)
         return jsonify({'error': 'Server error'}), 500
 
-# Verify Token route (optional)
+# Verify Token route (using fresh_jwt_required)
 @auth_blueprint.route('/verify', methods=['GET'])
+@jwt_required(fresh=True) # Require a fresh token for verification
 def verify_token():
-    auth_header = request.headers.get('Authorization')
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
 
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'No token provided'}), 401
-
-    token = auth_header.split(' ')[1]
-
+# Refresh token endpoint
+@auth_blueprint.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
     try:
-        # Decode the token
-        decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=['HS256'])
-        return jsonify({'decoded': decoded}), 200
+        current_user = get_jwt_identity()
+        
+        # Query the user using SQLAlchemy
+        user: User = User.query.filter_by(email=current_user).first()
 
-    except jwt.ExpiredSignatureError as e :
-        print_exception(e)
-        return jsonify({'error': 'Token has expired'}), 401
+        # If user is not found or password hash is missing
+        if not user:
+            return jsonify({'error': 'Invalid refresh token'}), 400
 
-    except jwt.InvalidTokenError as e :
+        additional_claims = {
+            'permission': user.permission,  # Include the user's permission in the token
+            'company_id': user.company_id  # Include the user's permission in the token
+        }
+        new_access_token = create_access_token(identity=current_user, fresh=False, additional_claims=additional_claims)
+        new_refresh_token = create_refresh_token(identity=current_user) 
+
+        return jsonify({
+            'access_token': new_access_token, 
+            'refresh_token': new_refresh_token
+            }), 200
+    
+    except Exception as e:
+        # Handle exceptions gracefully (you can customize this)
         print_exception(e)
-        return jsonify({'error': 'Invalid token'}), 401
+        return jsonify({'error': 'Server error'}), 500

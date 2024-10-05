@@ -1,16 +1,23 @@
 from flask import Blueprint, request, jsonify
 from models import Company, User, db  # Import your models
 from cmn_utils import *
+from cmn_defs import *
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 companies_blueprint = Blueprint('companies', __name__)
 
 # Create company route
 @companies_blueprint.route('/create-company', methods=['POST'])
+@jwt_required() 
 def create_company():
-    data = request.get_json()
-    company_name = data.get('company_name')
-
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403
+        
+        data = request.get_json()
+        company_name = data.get('company_name')
+
         # Check if company already exists using SQLAlchemy
         existing_company = Company.query.filter_by(company_name=company_name).first()
         if existing_company:
@@ -30,15 +37,20 @@ def create_company():
         print_exception(e)  # Assuming you have a print_exception function
         return jsonify({'error': 'Server error'}), 500
 
-# Update company route
-@companies_blueprint.route('/update-company/<string:id>', methods=['PUT'])
-def update_company(id):
-    data = request.get_json()
-    company_name = data.get('company_name')
-
+@companies_blueprint.route('/update-company', methods=['PUT'])
+@jwt_required() 
+def update_company():
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403
+         
+        data = request.get_json()
+        company_id = data.get('company_id')  # Get company_id from the request body
+        company_name = data.get('company_name')
+
         # Get the company using SQLAlchemy
-        company = Company.query.get(id)
+        company = Company.query.get(company_id)
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
@@ -56,11 +68,17 @@ def update_company(id):
         return jsonify({'error': 'Server error'}), 500
 
 # "Remove" company route (soft delete)
-@companies_blueprint.route('/remove-company/<string:id>', methods=['PUT'])  # Changed to PUT for soft delete
-def remove_company(id):
+@companies_blueprint.route('/remove-company/<string:company_id>', methods=['PUT'])
+@jwt_required() 
+def remove_company(company_id):
+    # data = request.get_json()
+    # company_id = data.get('company_id')  # Get company_id from the request body
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403 
         # Soft delete company using SQLAlchemy
-        company = Company.query.get(id)
+        company = Company.query.get(company_id)
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
@@ -71,13 +89,18 @@ def remove_company(id):
 
     except Exception as e:
         db.session.rollback()
-        print_exception(e)
+        print_exception(e)  # Assuming you have a print_exception function
         return jsonify({'error': 'Server error'}), 500
 
 # Get active companies route
 @companies_blueprint.route('/active', methods=['GET'])
+@jwt_required() 
 def get_active_companies():
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403 
+
         # Query active companies using SQLAlchemy and join with users to get the admin
         active_companies = (
             db.session.query(Company)
@@ -102,8 +125,13 @@ def get_active_companies():
 
 # Get all companies route
 @companies_blueprint.route('/', methods=['GET'])
+@jwt_required() 
 def get_all_companies():
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403 
+        
         # Query all companies using SQLAlchemy and join with users to get the admin
         all_companies = (
             db.session.query(Company)
@@ -125,9 +153,12 @@ def get_all_companies():
         print_exception(e)
         return jsonify({'error': 'Internal server error'}), 500
 
-@companies_blueprint.route('/<string:company_id>/users')
+@companies_blueprint.route('<string:company_id>/users', methods=['GET'])
+@jwt_required() 
 def get_company_users(company_id):
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        
         # Query the company by its ID
         company = Company.query.get(company_id)
 
@@ -144,4 +175,33 @@ def get_company_users(company_id):
 
     except Exception as e:
         # Handle any unexpected errors
+        return jsonify({'error': str(e)}), 500
+
+@companies_blueprint.route('/<string:company_id>', methods=['GET'])
+@jwt_required() 
+def get_company_details(company_id):
+    try:
+        # Get the identity of the current user from the JWT
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        # Query the company by ID (using the company_id from the URL path)
+        company: Company = Company.query.filter_by(company_id=company_id).first()
+
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        company_dict = company.to_dict()
+        if user_permission == E_PERMISSIONS.net_admin:
+            return jsonify(company_dict), 200
+        
+        # Check if the current user is an employee or the employer of the company
+        if user_company_id == company_id:
+            if user_permission == 1:  # Employer
+                return jsonify(company_dict), 200
+            else:  # Employee
+                return jsonify({'company_name': company.company_name}), 200
+        else:
+            return jsonify({'error': 'Unauthorized access'}), 403 
+
+    except Exception as e:
         return jsonify({'error': str(e)}), 500

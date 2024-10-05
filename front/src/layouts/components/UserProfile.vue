@@ -1,7 +1,9 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import avatar1 from '@images/avatars/avatar-1.png';
+import { useAuthStore } from '@/store/auth';
 const router = useRouter();
+const authStore = useAuthStore();
 
 const logout = () => {
   // Clear the JWT token from localStorage
@@ -58,9 +60,9 @@ const logout = () => {
             </template>
 
             <VListItemTitle class="font-weight-semibold">
-              John Doe
+              {{ authStore.user.f_name }} {{ authStore.user.l_name }}  
             </VListItemTitle>
-            <VListItemSubtitle>Admin</VListItemSubtitle>
+            <VListItemSubtitle>{{ authStore.user.company_name }}</VListItemSubtitle>
           </VListItem>
           <VDivider class="my-2" />
 

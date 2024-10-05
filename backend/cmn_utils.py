@@ -3,7 +3,7 @@ from tabulate import tabulate
 import datetime
 import re
 import psycopg2
-
+from flask_jwt_extended import get_jwt_identity, get_jwt
 
 def print_exception(exception):
     """Prints a formatted exception message in a table with a vertical separator.
@@ -41,3 +41,11 @@ def get_db_connection(config: dict):
         password=config['DB_PASSWORD']
     )
     return conn
+
+def extract_jwt():
+    current_user_email = get_jwt_identity()
+    claims = get_jwt()
+    user_permission = claims.get('permission') 
+    user_company_id = claims.get('company_id') 
+    
+    return current_user_email, user_permission, user_company_id

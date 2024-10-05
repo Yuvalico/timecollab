@@ -1,5 +1,9 @@
 <script setup>
 import { ref, onMounted, defineEmits, defineExpose } from 'vue';
+import { endpoints } from '@/utils/backendEndpoints';
+
+// Inject the Axios instance
+const api = inject('api');
 
 // Declare emitted events
 const emit = defineEmits(['userCreated', 'userUpdated']);
@@ -19,15 +23,15 @@ const salary = ref(null);
 const workCapacity = ref(null);
 const companies = ref([]); // To hold the list of companies fetched from API
 
-const permissions = ref(['Net Admin', 'Employer', 'Employee']);
+const permissions = ref(['net_admin', 'employer', 'employee']);
 const requiredRule = (value) => !!value || 'Required';
 const emailRule = (value) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
 
 // Fetch companies from the API
 async function fetchCompanies() {
   try {
-    const response = await fetch('http://localhost:3000/api/companies/active');
-    const data = await response.json();
+    const response = await api.get('http://localhost:3000/api/companies/active');
+    const data = await response.data;
 
     companies.value = data.map(company => company.company_name);
     
@@ -78,10 +82,10 @@ function resetForm() {
 // Submit handler
 const submitForm = async () => {
   try {
-    const method = isEditing.value ? 'PUT' : 'POST';
-    const url = isEditing.value 
-      ? `http://localhost:3000/api/users/update-user/${userId.value}`
-      : 'http://localhost:3000/api/users/create-user';
+    const method = isEditing.value ? 'put' : 'post';
+    const url = isEditing.value
+      ? `${endpoints.users.update}/${userId.value}` 
+      : endpoints.users.create;
 
     // Log data to be sent
     console.log({
@@ -97,12 +101,13 @@ const submitForm = async () => {
       work_capacity: workCapacity.value,
     });
 
-    const response = await fetch(url, {
+    const response = await api({
       method,
+      url,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
+      data: {
         first_name: firstName.value,
         last_name: lastName.value,
         mobile_phone: mobile_phone.value,
@@ -110,13 +115,17 @@ const submitForm = async () => {
         password: password.value,
         company_name: selectedCompany.value,
         role: role.value,
-        permission: permission.value,
+        permission: {
+          'net_admin': 0,
+          'employer': 1,
+          'employee': 2
+        }[permission.value],
         salary: salary.value,
         work_capacity: workCapacity.value,
-      }),
+      },
     });
 
-    if (response.ok) {
+    if ((response.status === 200) || (response.status === 201)) {
       if (isEditing.value) {
         console.log('User updated successfully');
         emit('userUpdated');  // Emit event on success
@@ -127,7 +136,7 @@ const submitForm = async () => {
       showForm.value = false; // Close the modal on success
     } else {
       console.error('Failed to submit form');
-      const errorData = await response.json();
+      const errorData = await response.data;
       console.error('Error details:', errorData);
     }
   } catch (error) {

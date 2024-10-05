@@ -1,20 +1,24 @@
 from flask import Blueprint, request, jsonify
 from models import db, User, TimeStamp
 from datetime import datetime, timezone
-from cmn_utils import print_exception
+from cmn_utils import print_exception, extract_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 timestamps_bp = Blueprint('timestamps', __name__)
 
 @timestamps_bp.route('/', methods=['POST'])
+@jwt_required() 
 def create_timestamp():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    entered_by = data.get('entered_by')
-    punch_type = data.get('punch_type')
-    reporting_type = data.get('reporting_type')
-    detail = data.get('detail')
-
     try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        entered_by = data.get('entered_by')
+        punch_type = data.get('punch_type')
+        reporting_type = data.get('reporting_type')
+        detail = data.get('detail')
+
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
         user = User.query.filter_by(id=user_id).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_id}'}), 404
@@ -46,8 +50,11 @@ def create_timestamp():
         return jsonify({'error': 'Server error'}), 500
 
 @timestamps_bp.route('/', methods=['GET'])
+@jwt_required() 
 def get_timestamps():
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
         timestamps = TimeStamp.query.all()
         timestamps_list = [timestamp.to_dict() for timestamp in timestamps]
         return jsonify(timestamps_list), 200
@@ -57,14 +64,17 @@ def get_timestamps():
         return jsonify({'error': 'Internal server error'}), 500
 
 @timestamps_bp.route('/punch_out', methods=['POST'])
+@jwt_required() 
 def punch_out():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    entered_by = data.get('entered_by')
-    reporting_type = data.get('reporting_type')
-    detail = data.get('detail')
-
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        data = request.get_json()
+        user_id = data.get('user_id')
+        entered_by = data.get('entered_by')
+        reporting_type = data.get('reporting_type')
+        detail = data.get('detail')
+
         user = User.query.filter_by(id=user_id).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_id}'}), 404
@@ -102,11 +112,14 @@ def punch_out():
         return jsonify({'error': 'Server error'}), 500
 
 @timestamps_bp.route('/punch_in_status', methods=['POST'])
+@jwt_required() 
 def check_punch_in_status():
-    data = request.get_json()
-    user_id = data.get('user_id')
-
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        data = request.get_json()
+        user_id = data.get('user_id')
+
         user = User.query.filter_by(id=user_id).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_id}'}), 404
@@ -132,8 +145,11 @@ def check_punch_in_status():
         return jsonify({'error': 'Server error'}), 500
 
 @timestamps_bp.route('/<uuid:uuid>', methods=['DELETE'])
+@jwt_required() 
 def delete_timestamp(uuid):
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
         timestamp = TimeStamp.query.filter_by(uuid=uuid).first()
         if not timestamp:
             return jsonify({'error': 'Timestamp not found'}), 404
@@ -149,11 +165,14 @@ def delete_timestamp(uuid):
         return jsonify({'error': 'Server error'}), 500
 
 @timestamps_bp.route('/work_time_today', methods=['POST'])
+@jwt_required() 
 def work_time_today():
-    data = request.get_json()
-    user_id = data.get('user_id')
-
     try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        data = request.get_json()
+        user_id = data.get('user_id')
+
         user = User.query.filter_by(id=user_id).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_id}'}), 404

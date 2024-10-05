@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useTheme } from 'vuetify';
-import axios from 'axios';  // Add Axios for API calls
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import { endpoints } from '@/utils/backendEndpoints';
 
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue';
 
@@ -12,6 +12,9 @@ import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png';
 import authV1MaskLight from '@images/pages/auth-v1-mask-light.png';
 import authV1Tree2 from '@images/pages/auth-v1-tree-2.png';
 import authV1Tree from '@images/pages/auth-v1-tree.png';
+
+// Inject the Axios instance
+const api = inject('api');
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -35,28 +38,47 @@ const isPasswordVisible = ref(false);
 // New function to handle login
 const handleLogin = async () => {
   try {
-    const response = await axios.post('http://localhost:3000/auth/login', {
+    const response = await api.post(endpoints.auth.login, {
       email: form.value.email,
       password: form.value.password,
     }, {
       withCredentials: true
     });
 
-    const { token, permission } = response.data;
-    const user_details = await axios.get('http://localhost:3000/api/users/get-user-by-email/' + form.value.email)
-    const user_data = user_details.data
-    // Store the JWT token in localStorage
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('userPermission', permission);
+    const { access_token, refresh_token, permission, company_id } = response.data;
     authStore.setUser({ email: form.value.email, 
-                        id: user_data.id,
-                        f_name: user_data.first_name, 
-                        l_name: user_data.last_name, 
-                        permission: permission 
+                        permission: permission,
+                        company_id: company_id
                       }, 
-                      token);
+                      access_token,
+                      refresh_token,
+                    );
+
+    //Get user data
+    const user_details = await api.get(`${endpoints.users.getByEmail}/${form.value.email}`)
+    const user_data = user_details.data
+
+    // Get company data
+    const company_details = await api.get(`${endpoints.companies.getCompanyDetails}/${user_data.company_id}`)
+    const company_data = company_details.data
+
+    // // Store the JWT token in localStorage
+    // localStorage.setItem('authToken', access_token);
+    // localStorage.setItem('refreshToken', refresh_token);
+    // localStorage.setItem('userPermission', permission);
+    authStore.setUser({ email: form.value.email, 
+      id: user_data.id,
+      f_name: user_data.first_name, 
+      l_name: user_data.last_name, 
+      company_id: company_data.company_id,
+      company_name: company_data.company_name,
+      permission: permission 
+    }, 
+    access_token,
+    refresh_token
+  );
     
-    console.log(authStore.user.id, authStore.user.f_name, authStore.user.l_name)
+  console.log(authStore.user.id, authStore.user.f_name, authStore.user.l_name)
 
     // Redirect to a protected route, e.g., dashboard
     router.push('/dashboard');

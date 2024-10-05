@@ -6,13 +6,13 @@ const router = express.Router();
 
 // Permission map
 const permissionMapToInt = {
-  'Net Admin': 0,
+  'net_admin': 0,
   'Employer': 1,
   'Employee': 2,
 };
 
 const permissionMapToStr = {
-  0: 'Net Admin',
+  0: 'net_admin',
   1: 'Employer',
   2: 'Employee',
 };

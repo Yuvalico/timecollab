@@ -62,11 +62,13 @@ class TimeStamp(db.Model):
     )
     user_id = db.Column(
         UUID(as_uuid=True),
-        db.ForeignKey('users.id')
+        db.ForeignKey('users.id'),
+        nullable=False
     )
     entered_by = db.Column(
         UUID(as_uuid=True),
-        db.ForeignKey('users.id')
+        db.ForeignKey('users.id'),
+        nullable=False
     )
     punch_type = db.Column(db.Integer)
     punch_in_timestamp = db.Column(db.DateTime(timezone=True))
@@ -88,6 +90,12 @@ class TimeStamp(db.Model):
         'User',
         foreign_keys=[entered_by],
         backref='entered_timestamps'
+    )
+
+    user = db.relationship(
+        'User',
+        foreign_keys=[user_id],
+        backref='timestamps'  # Add the backref here
     )
 
     def to_dict(self):

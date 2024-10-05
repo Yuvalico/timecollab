@@ -1,13 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
+import { useRouter } from 'vue-router';
 import SimpleTable from '@/views/pages/tables/SimpleTable.vue';
 import UserForm from '@/components/UserForm.vue';
 import CompanyForm from '@/components/CompanyForm.vue';
+import { endpoints } from '@/utils/backendEndpoints';
+
+// Inject the Axios instance
+const api = inject('api');
 
 const router = useRouter();
 const authStore = useAuthStore();
 console.log(authStore);
+
 
 if (!authStore.isNetAdmin) {
   router.push('/dashboard'); // Redirect non-admin users to the dashboard
@@ -40,8 +46,9 @@ const companyHeaders = [
 // Fetch users from the API
 async function fetchUsers() {
   try {
-    const userResponse = await fetch('http://localhost:3000/api/users/active');
-    users.value = (await userResponse.json()).map(user => ({
+    const userResponse = await api.get(`${endpoints.users.getActive}`);
+    console.log(userResponse.data)
+    users.value = (await userResponse.data).map(user => ({
       ...user,
       fullName: `${user.first_name} ${user.last_name}`,
       actions: {
@@ -59,8 +66,8 @@ async function fetchUsers() {
 // Fetch companies from the API
 async function fetchCompanies() {
   try {
-    const companyResponse = await fetch('http://localhost:3000/api/companies/active');
-    companies.value = (await companyResponse.json()).map(company => ({
+    const companyResponse =  await api.get(`${endpoints.companies.getActive}`); 
+    companies.value = (await companyResponse.data).map(company => ({
       ...company,
       companyName: company.company_name,
       actions: {
@@ -105,11 +112,9 @@ const userFormRef = ref(null); // Ref for the UserForm component
 
 const removeUser = async (user) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/users/remove-user/${user.id}`, {
-      method: 'PUT',
-    });
+    const response = await api.put(`${endpoints.users.remove}/${user.id}`);
 
-    if (response.ok) {
+    if (response.status === 200) {
       console.log('User removed successfully');
       // Refresh the users list after removal
       fetchUsers();
@@ -132,11 +137,9 @@ const companyFormRef = ref(null); // Ref for the CompanyForm component
 
 const removeCompany = async (company) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/companies/remove-company/${company.company_id}`, {
-      method: 'PUT',
-    });
+    const response = await api.put(`${endpoints.companies.remove}/${company.company_id}`);
 
-    if (response.ok) {
+    if (response.status === 200) {
       console.log('Company removed successfully');
       // Refresh the companies list after removal
       fetchCompanies();

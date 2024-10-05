@@ -8,8 +8,10 @@ from endpoints.timestamps import timestamps_bp
 from config import Config
 from dotenv import load_dotenv
 from models import db
+from flask_jwt_extended import JWTManager
 import sys
 import os
+from datetime import timedelta
 
 backend_parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -24,14 +26,17 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Apply CORS globally before registering blueprints
-CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:kokonoko@127.0.0.1/tlv300'  # Replace with your actual database URI
+CORS(app, resources={r"/*": {"origins": f"http://{Config.WEB_URL}:{Config.WEB_PORT}", "supports_credentials": True}})
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}/{Config.DB_NAME}'  # Replace with your actual database URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Optional, but recommended
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # 1-hour access token expiration
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30) # 30-day refresh token expiration
 
-db.init_app(app)  
+db.init_app(app)
+jwt = JWTManager(app)
 
 # Register blueprints
-app.register_blueprint(auth_blueprint, url_prefix='/auth')
+app.register_blueprint(auth_blueprint, url_prefix=BASE_API+'/auth')
 app.register_blueprint(companies_blueprint, url_prefix=BASE_API + '/companies')
 app.register_blueprint(users_blueprint, url_prefix=BASE_API + '/users')
 app.register_blueprint(timestamps_bp, url_prefix=BASE_API + '/timestamps')
@@ -49,4 +54,5 @@ if __name__ == '__main__':
     print("Registered Routes:")
     for rule in app.url_map.iter_rules():
         print(rule)
+    
     app.run(debug=True, port=3000)
