@@ -38,7 +38,7 @@ def create_user():
             return jsonify({'error': 'User already exists'}), 400
 
         # Get the company_id using SQLAlchemy
-        company = Company.query.filter_by(company_name=company_name).first()
+        company: Company = Company.query.filter_by(company_name=company_name).first()
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
@@ -76,8 +76,8 @@ def update_user():
         if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
             return jsonify({'error': 'Unauthorized access'}), 403 
         
-        data = request.get_json()
-        user_id = data.get('id')  # Get user_id from the request body
+        data: dict = request.get_json()
+        user_email = data.get('email')  # Get user_email from the request body
         first_name = data.get('first_name')
         last_name = data.get('last_name')
         mobile_phone = data.get('mobile_phone')
@@ -88,7 +88,7 @@ def update_user():
         work_capacity = data.get('work_capacity')
 
         # Get the user using SQLAlchemy
-        user = User.query.get(user_id)
+        user: User = User.query.get(user_email)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
@@ -113,19 +113,19 @@ def update_user():
         return jsonify({'error': 'Server error'}), 500
 
 # Remove user route (soft delete)
-@users_blueprint.route('/remove-user/<string:user_id>', methods=['PUT']) 
+@users_blueprint.route('/remove-user/<string:user_email>', methods=['PUT']) 
 @jwt_required() 
-def remove_user(user_id):
+def remove_user(user_email):
     try:
-        current_user_email, user_permission, user_company_id = extract_jwt()
+        current_user_email, user_permission, user_company_email = extract_jwt()
         if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
             return jsonify({'error': 'Unauthorized access'}), 403 
     
         # data = request.get_json()
-        # user_id = data.get('id')  # Get user_id from the request body
+        # user_email = data.get('email')  # Get user_email from the request body
 
         # Soft delete user using SQLAlchemy
-        user = User.query.get(user_id)
+        user = User.query.get(user_email)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
@@ -145,24 +145,45 @@ def remove_user(user_id):
 def get_active_users():
     try:
         current_user_email, user_permission, user_company_id = extract_jwt()
-        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.employer:
             return jsonify({'error': 'Unauthorized access'}), 403 
         
-        # Query active users using SQLAlchemy and join with companies
-        active_users: list[User] = (
-            db.session.query(User, Company)
-            .join(Company, User.company_id == Company.company_id)
-            .filter(User.is_active == True)
-            .all()
-        )
+        if E_PERMISSIONS.to_enum(user_permission) ==E_PERMISSIONS.net_admin:
+            # Query active users using SQLAlchemy and join with companies
+            active_users: list[User] = (
+                db.session.query(User, Company)
+                .join(Company, User.company_id == Company.company_id)
+                .filter(User.is_active == True)
+                .all()
+            )
 
-        # Format the results
-        user_data = []
-        for user, company in active_users:
-            user_dict = user.to_dict()  # Assuming you have a to_dict() method
-            user_dict['company_name'] = company.company_name
-            user_dict['permission'] = user.permission
-            user_data.append(user_dict)
+            # Format the results
+            user_data = []
+            for user, company in active_users:
+                user_dict = user.to_dict()  # Assuming you have a to_dict() method
+                user_dict['company_name'] = company.company_name
+                user_dict['permission'] = user.permission
+                user_data.append(user_dict)
+        
+        if E_PERMISSIONS.to_enum(user_permission) == E_PERMISSIONS.employer:
+            # Fetch users for the employer's company
+            active_users = (
+                db.session.query(User, Company)
+                .join(Company, User.company_id == Company.company_id)
+                .filter(
+                    User.is_active == True,  # Filter for active users
+                    User.company_id == user_company_id  # Filter by the employer's company_id
+                )
+                .all()
+            )
+
+            # Format the results (similar to net_admin, but no need to join with Company)
+            user_data = []
+            for user, company in active_users:  # No need to unpack company here
+                user_dict = user.to_dict()
+                user_dict['company_name'] = company.company_name  # You might need to fetch the company name separately
+                user_dict['permission'] = user.permission
+                user_data.append(user_dict)
 
         return jsonify(user_data), 200
 
@@ -225,3 +246,4 @@ def user_by_email(email):
     except Exception as e:
         print_exception(e)
         return jsonify({'error': str(e)}), 500
+    

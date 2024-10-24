@@ -6,6 +6,14 @@ import SimpleTable from '@/views/pages/tables/SimpleTable.vue';
 import UserForm from '@/components/UserForm.vue';
 import CompanyForm from '@/components/CompanyForm.vue';
 import { endpoints } from '@/utils/backendEndpoints';
+import avatar1 from '@images/avatars/avatar-1.png'
+import avatar2 from '@images/avatars/avatar-2.png'
+import avatar3 from '@images/avatars/avatar-3.png'
+import avatar4 from '@images/avatars/avatar-4.png'
+import avatar5 from '@images/avatars/avatar-5.png'
+import avatar6 from '@images/avatars/avatar-6.png'
+import avatar7 from '@images/avatars/avatar-7.png'
+import avatar8 from '@images/avatars/avatar-8.png'
 
 // Inject the Axios instance
 const api = inject('api');
@@ -15,33 +23,66 @@ const authStore = useAuthStore();
 console.log(authStore);
 
 
-if (!authStore.isNetAdmin) {
-  router.push('/dashboard'); // Redirect non-admin users to the dashboard
-}
+// if (!authStore.isNetAdmin) {
+//   router.push('/dashboard'); // Redirect non-admin users to the dashboard
+// }
 
 // Refs to store users and companies
 const users = ref([]);
 const companies = ref([]);
 const companiesWithAdmins = ref([]);
+const selectedCompany = ref("Filter Users by Company"); // To store the selected company name
+
 
 // Headers for tables
-const userHeaders = [
-  { text: 'Name', value: 'fullName' },
-  { text: 'Mobile Phone', value: 'mobile_phone' },
-  { text: 'Email', value: 'email' },
-  { text: 'Company Name', value: 'company_name' },
-  { text: 'Role', value: 'role' },
-  { text: 'Salary', value: 'salary' },
-  { text: 'Work Capacity', value: 'work_capacity' },
-  { text: 'Permission', value: 'permission' },
-  { text: '', value: 'actions', align: 'center', sortable: false },
-];
+const userHeaders = computed(() => {
+  const headers  = [
+    { text: 'Name', value: 'fullName' },
+    { text: 'Mobile Phone', value: 'mobile_phone' },
+    { text: 'Email', value: 'email' },
+    { text: 'Company Name', value: 'company_name' },
+    { text: 'Role', value: 'role' },
+    { text: 'Salary', value: 'salary' },
+    { text: 'Work Capacity', value: 'work_capacity' },
+    { text: 'Permission', value: 'permission' },
+    // { text: '', value: 'actions', align: 'center', sortable: false },
+  ];
+  if (authStore.isNetAdmin) {
+      headers.push({ text: '', value: 'actions', align: 'center', sortable: false });
+    }
+    return headers;
+});
 
 const companyHeaders = [
   { text: 'Company Name', value: 'companyName' },
   { text: 'Admin User', value: 'adminUser' },
   { text: '', value: 'actions', align: 'center', sortable: false },
 ];
+
+// Computed property for company filtering options
+const companyOptions = computed(() => {
+  return ['No Filter'].concat(companies.value.map(company => company.company_name));
+});
+
+// Computed property to filter users by company
+const filteredUsers = computed(() => {
+  console.log("Filtering users by company:", selectedCompany.value);
+  if (authStore.isNetAdmin && selectedCompany.value !== "Filter Users by Company" && selectedCompany.value !== "No Filter") { // Check if a company is actually selected
+    return users.value.filter(user => user.company_name === selectedCompany.value);
+  } else {
+    return users.value; 
+  }
+});
+
+// function to filter users when a company is selected
+const filterUsersByCompany = () => {
+  // This will automatically trigger the 'filteredUsers' computed property
+};
+
+// Watch for changes in users.value and log them
+watch(() => users.value, (newUsers) => {
+  console.log('users.value changed:', newUsers);
+});
 
 // Fetch users from the API
 async function fetchUsers() {
@@ -102,7 +143,7 @@ function getAdminUser(companyID) {
 
 function editUser(user) {
   console.log("Editing user: ", user);
-  // Use ref method to open the form with pre-filled data
+  // Use ref function to open the form with pre-filled data
   userFormRef.value.openForm(user);
   // Refresh the users list after editing
   fetchUsers();
@@ -112,7 +153,7 @@ const userFormRef = ref(null); // Ref for the UserForm component
 
 const removeUser = async (user) => {
   try {
-    const response = await api.put(`${endpoints.users.remove}/${user.id}`);
+    const response = await api.put(`${endpoints.users.remove}/${user.email}`);
 
     if (response.status === 200) {
       console.log('User removed successfully');
@@ -154,7 +195,9 @@ const removeCompany = async (company) => {
 // Fetch data on component mount
 onMounted(() => {
   fetchUsers();
-  fetchCompanies();
+  if (authStore.isNetAdmin){
+    fetchCompanies();
+  }
 });
 </script>
 
@@ -163,12 +206,32 @@ onMounted(() => {
     <VCol cols="12">
       <VCard>
         <VCardTitle class="d-flex justify-space-between align-center">
-          <span>Users</span>
-          <UserForm ref="userFormRef" @userCreated="fetchUsers" @userUpdated="fetchUsers" />
+          <span>
+            <span v-if="authStore.isEmployer">
+              {{ authStore.user.company_name }} - 
+            </span>
+            <span>Users</span>
+          </span>
+
+          <div v-if="authStore.isNetAdmin" class="d-flex align-center"> 
+            <VSelect
+              v-model="selectedCompany"
+              :items="companyOptions"
+              label="Select Company"
+              @change="filterUsersByCompany"
+              class="mr-4" 
+            />
+          </div>
+
+          <UserForm v-if="authStore.isNetAdmin" ref="userFormRef" @userCreated="fetchUsers" @userUpdated="fetchUsers" />
         </VCardTitle>
-        <SimpleTable :headers="userHeaders" :items="users">
+
+        
+
+
+        <SimpleTable :headers="userHeaders" :items="filteredUsers">
           <template v-slot:item.actions="{ item }">
-            <div class="actions-col">
+            <div class="actions-col" v-if="authStore.isNetAdmin">
               <IconBtn
                 icon="ri-edit-line"
                 @click="item.actions.edit"
@@ -183,7 +246,7 @@ onMounted(() => {
       </VCard>
     </VCol>
 
-    <VCol cols="12" class="mt-4">
+    <VCol cols="12" class="mt-4" v-if="authStore.isNetAdmin"> 
       <VCard>
         <VCardTitle class="d-flex justify-space-between align-center">
           <span>Companies</span>

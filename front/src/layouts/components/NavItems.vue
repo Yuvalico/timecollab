@@ -67,12 +67,6 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     />
   <VerticalNavLink
     :item="{
-      title: 'employerManagement',
-      to: '/employerManagement',
-    }"
-    />
-  <VerticalNavLink
-    :item="{
       title: 'TimeWatch',
       to: '/timewatch',
     }"

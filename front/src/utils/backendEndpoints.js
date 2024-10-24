@@ -35,11 +35,12 @@ export const endpoints = {
         refresh: `${AUTH_ENDPOINT}/refresh`,
     },
     timestamps: {
-        create:         `${TIMESTAMP_ENDPOINT}/`,  // POST
-        getAll:         `${TIMESTAMP_ENDPOINT}/`,  // GET
-        punchOut:       `${TIMESTAMP_ENDPOINT}/`,  // PUT
-        punchInStatus:  `${TIMESTAMP_ENDPOINT}/punch_in_status`, // New endpoint
-        delete:         `${TIMESTAMP_ENDPOINT}/`, // DELETE
+        create:         `${TIMESTAMP_ENDPOINT}/`,                   // POST
+        getAll:         `${TIMESTAMP_ENDPOINT}/`,                   // GET
+        getRange:        `${TIMESTAMP_ENDPOINT}/getRange`,          // GET
+        punchOut:       `${TIMESTAMP_ENDPOINT}/`,                   // PUT
+        punchInStatus:  `${TIMESTAMP_ENDPOINT}/punch_in_status`,    // GET
+        delete:         `${TIMESTAMP_ENDPOINT}/`,                   // DELETE
         workTimeToday:  `${TIMESTAMP_ENDPOINT}/work_time_today`,
     }
 };

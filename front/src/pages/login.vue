@@ -67,7 +67,7 @@ const handleLogin = async () => {
     // localStorage.setItem('refreshToken', refresh_token);
     // localStorage.setItem('userPermission', permission);
     authStore.setUser({ email: form.value.email, 
-      id: user_data.id,
+      // id: user_data.id,
       f_name: user_data.first_name, 
       l_name: user_data.last_name, 
       company_id: company_data.company_id,
@@ -78,7 +78,7 @@ const handleLogin = async () => {
     refresh_token
   );
     
-  console.log(authStore.user.id, authStore.user.f_name, authStore.user.l_name)
+  console.log(/*authStore.user.id, */authStore.user.f_name, authStore.user.l_name)
 
     // Redirect to a protected route, e.g., dashboard
     router.push('/dashboard');

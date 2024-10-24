@@ -12,6 +12,7 @@ from flask_jwt_extended import JWTManager
 import sys
 import os
 from datetime import timedelta
+from cmn_utils import *
 
 backend_parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -54,5 +55,7 @@ if __name__ == '__main__':
     print("Registered Routes:")
     for rule in app.url_map.iter_rules():
         print(rule)
-    
+
+    create_db(app, db)
+
     app.run(debug=True, port=3000)

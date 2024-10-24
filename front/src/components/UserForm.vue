@@ -30,7 +30,7 @@ const emailRule = (value) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
 // Fetch companies from the API
 async function fetchCompanies() {
   try {
-    const response = await api.get('http://localhost:3000/api/companies/active');
+    const response = await api.get(`${endpoints.companies.getActive}`);
     const data = await response.data;
 
     companies.value = data.map(company => company.company_name);
@@ -47,7 +47,7 @@ onMounted(fetchCompanies);
 function openForm(user = null) {
   if (user) {
     isEditing.value = true;
-    userId.value = user.id;
+    // userId.value = user.id;
     firstName.value = user.first_name;
     lastName.value = user.last_name;
     email.value = user.email;

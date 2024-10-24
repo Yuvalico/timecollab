@@ -15,11 +15,6 @@ export const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'employerManagement',
-        component: () => import('@/pages/employerManagement/employerManagement.vue'),
-        meta: { requiresAuth: true },
-      },
-      {
         path: 'timewatch',
         component: () => import('@/pages/Timewatch.vue'),
         meta: { requiresAuth: true },

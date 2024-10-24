@@ -1,4 +1,5 @@
 import psycopg2
+from backend.config import *
 
 def initialize_database(config):
   """Initializes the PostgreSQL database with the provided schema.
@@ -58,12 +59,12 @@ def initialize_database(config):
           cursor.close()
           conn.close()
 
-# Example usage (replace with your actual configuration)
-config = {
-  'host': 'localhost',
-  'database': 'tlv300',
-  'user': 'postgres',
-  'password': 'kokonoko'
-}
+# # Example usage (replace with your actual configuration)
+# config = {
+#   'host': 'localhost',
+#   'database': 'tlv300',
+#   'user': 'postgres',
+#   'password': 'kokonoko'
+# }
 
-initialize_database(config)
+initialize_database(Config)

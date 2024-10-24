@@ -23,12 +23,10 @@ class Company(db.Model):
 
 class User(db.Model):
     __tablename__ = 'users'
-    id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
-
+    email = db.Column(db.String(255), primary_key=True)
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     mobile_phone = db.Column(db.String(20))
-    email = db.Column(db.String(255))
     company_id = db.Column(UUID(as_uuid=True), db.ForeignKey('companies.company_id'))
     role = db.Column(db.String(255))
     permission = db.Column(db.Integer)
@@ -39,7 +37,6 @@ class User(db.Model):
 
     def to_dict(self):
         return {
-            'id': str(self.id),  # Convert UUID to string
             'first_name': self.first_name,
             'last_name': self.last_name,
             'mobile_phone': self.mobile_phone,
@@ -55,21 +52,9 @@ class User(db.Model):
         
 class TimeStamp(db.Model):
     __tablename__ = 'time_stamps'
-    uuid = db.Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.uuid_generate_v4()
-    )
-    user_id = db.Column(
-        UUID(as_uuid=True),
-        db.ForeignKey('users.id'),
-        nullable=False
-    )
-    entered_by = db.Column(
-        UUID(as_uuid=True),
-        db.ForeignKey('users.id'),
-        nullable=False
-    )
+    uuid = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    user_email = db.Column(db.ForeignKey('users.email'),nullable=False)
+    entered_by = db.Column(db.ForeignKey('users.email'), nullable=False)
     punch_type = db.Column(db.Integer)
     punch_in_timestamp = db.Column(db.DateTime(timezone=True))
     punch_out_timestamp = db.Column(db.DateTime(timezone=True))
@@ -94,14 +79,14 @@ class TimeStamp(db.Model):
 
     user = db.relationship(
         'User',
-        foreign_keys=[user_id],
+        foreign_keys=[user_email],
         backref='timestamps'  # Add the backref here
     )
 
     def to_dict(self):
         return {
             'uuid': str(self.uuid),
-            'user_id': str(self.user_id),
+            'user_email': str(self.user_email),
             'entered_by': str(self.entered_by),
             'punch_type': self.punch_type,
             'punch_in_timestamp': self.punch_in_timestamp.isoformat() if self.punch_in_timestamp else None,
