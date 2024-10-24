@@ -11,3 +11,4 @@ node_modules/.vue-global-types/vue_3.3_false.d.ts
 backend/.env
 backend/.env
 front/components.d.ts
+__pycache__

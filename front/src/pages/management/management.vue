@@ -226,9 +226,6 @@ onMounted(() => {
           <UserForm v-if="authStore.isNetAdmin" ref="userFormRef" @userCreated="fetchUsers" @userUpdated="fetchUsers" />
         </VCardTitle>
 
-        
-
-
         <SimpleTable :headers="userHeaders" :items="filteredUsers">
           <template v-slot:item.actions="{ item }">
             <div class="actions-col" v-if="authStore.isNetAdmin">
