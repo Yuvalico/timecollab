@@ -549,7 +549,7 @@ th, td {
           item-value="email"
           v-model="selectedUser"
         ></VSelect>
-        <span v-else class="value">({{ authStore.user.f_name }} {{ authStore.user.l_name }})</span> 
+        <span v-else class="value">{{ authStore.user.f_name }} {{ authStore.user.l_name }}</span> 
       </div>
 
       <div class="info-item">
