@@ -1,6 +1,8 @@
 <script setup>
+import { useAuthStore } from '@/store/auth';
 import VerticalNavSectionTitle from '@/@layouts/components/VerticalNavSectionTitle.vue'
 import VerticalNavGroup from '@layouts/components/VerticalNavGroup.vue'
+const authStore = useAuthStore();
 import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
 </script>
 
@@ -20,54 +22,21 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
         to: '/dashboard',
       }"
     />
-    <VerticalNavLink
-      :item="{
-        title: 'CRM',
-        href: 'https://demos.themeselection.com/materio-vuetify-vuejs-admin-template/demo-1/dashboards/crm',
-        target: '_blank',
-        badgeContent: 'Pro',
-        badgeClass: 'bg-light-primary text-primary',
-      }"
-    />
-    <VerticalNavLink
-      :item="{
-        title: 'ECommerce',
-        href: 'https://demos.themeselection.com/materio-vuetify-vuejs-admin-template/demo-1/dashboards/ecommerce',
-        target: '_blank',
-        badgeContent: 'Pro',
-        badgeClass: 'bg-light-primary text-primary',
-      }"
-    />
-    <VerticalNavLink
-      :item="{
-        title: 'Academy',
-        href: 'https://demos.themeselection.com/materio-vuetify-vuejs-admin-template/demo-1/dashboards/academy',
-        target: '_blank',
-        badgeContent: 'Pro',
-        badgeClass: 'bg-light-primary text-primary',
-      }"
-    />
-    <VerticalNavLink
-      :item="{
-        title: 'Logistics',
-        href: 'https://demos.themeselection.com/materio-vuetify-vuejs-admin-template/demo-1/dashboards/logistics',
-        target: '_blank',
-        badgeContent: 'Pro',
-        badgeClass: 'bg-light-primary text-primary',
-      }"
-    />
   </VerticalNavGroup>
 
   <!-- 👉 Front Pages -->
   <VerticalNavLink
+    v-if="authStore.isEmployer || authStore.isNetAdmin"
     :item="{
       title: 'Management',
+      icon: 'ri-team-line',
       to: '/management',
     }"
     />
   <VerticalNavLink
     :item="{
       title: 'TimeWatch',
+      icon: 'ri-calendar-schedule-line',
       to: '/timewatch',
     }"
     />
