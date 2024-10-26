@@ -40,6 +40,13 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/timewatch',
     }"
     />
+  <VerticalNavLink
+    :item="{
+      title: 'Reports',
+      icon: 'ri-file-chart-line',
+      to: '/reports',
+    }"
+    />
 
   <!-- 👉 Apps & Pages -->
   <VerticalNavSectionTitle
