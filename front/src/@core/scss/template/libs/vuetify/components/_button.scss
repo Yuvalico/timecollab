@@ -154,27 +154,27 @@ body {
     &--size-x-small {
       --v-btn-height: 28px;
       --v-btn-size: 11px;
+      line-height: 14px;
+      padding-block: 0;
+      padding-inline: 10px;
 
       &:not(.v-btn--icon) {
         border-radius: 0.125rem;
       }
 
-      line-height: 14px;
-      padding-block: 0;
-      padding-inline: 10px;
     }
 
     &--size-small {
       --v-btn-height: 34px;
       --v-btn-size: 13px;
 
+      line-height: 18px;
+      padding-block: 0;
+      padding-inline: 14px;
       &:not(.v-btn--icon) {
         border-radius: 0.25rem;
       }
 
-      line-height: 18px;
-      padding-block: 0;
-      padding-inline: 14px;
 
       .v-icon {
         --v-icon-size-multiplier: 0.718;
@@ -185,26 +185,26 @@ body {
       --v-btn-height: 42px;
       --v-btn-size: 17px;
 
+      line-height: 26px;
+      padding-block: 0;
+      padding-inline: 22px;
       &:not(.v-btn--icon) {
         border-radius: 0.5rem;
       }
 
-      line-height: 26px;
-      padding-block: 0;
-      padding-inline: 22px;
     }
 
     &--size-x-large {
       --v-btn-height: 48px;
       --v-btn-size: 19px;
 
+      line-height: 30px;
+      padding-block: 0;
+      padding-inline: 26px;
       &:not(.v-btn--icon) {
         border-radius: 0.625rem;
       }
 
-      line-height: 30px;
-      padding-block: 0;
-      padding-inline: 26px;
     }
 
     // Toggle Button

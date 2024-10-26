@@ -52,7 +52,6 @@
   </template>
   
   <script setup>
-  import { ref, defineEmits, defineExpose } from 'vue';
   import { endpoints } from '@/utils/backendEndpoints';
 
   const api = inject('api');

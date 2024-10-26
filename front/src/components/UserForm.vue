@@ -1,5 +1,4 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineExpose } from 'vue';
 import { endpoints } from '@/utils/backendEndpoints';
 
 // Inject the Axios instance

@@ -65,4 +65,11 @@ export default defineConfig({
       './src/**/*.vue',
     ],
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        quietDeps: true, // Add this line to suppress warnings
+      },
+    },
+  },
 })

@@ -600,8 +600,8 @@ th, td {
             <span class="value">{{ selectedUserData.role }}</span>
           </div>
           <div class="info-item">
-            <span class="label">Work Capacity:</span>
-            <span class="value">{{ selectedUserData.work_capacity }}</span>
+            <span class="label">Total time worked in {{ selectedMonth + 1 }}/{{ selectedYear }}:</span>
+            <span class="value">{{ totalTimeWorkedThisMonth }} Hours</span>
           </div>
         </VCol>
         <VCol cols="6" sm="6" md="6" lg="6"> 
@@ -611,12 +611,13 @@ th, td {
           </div>
           <div class="info-item">
             <span class="label">Salary:</span>
-            <span class="value">{{ selectedUserData.salary }}</span>
+            <span class="value">{{ selectedUserData.salary }} USD</span>
           </div>
           <div class="info-item">
-            <span class="label">Total time worked in {{ selectedMonth + 1 }}/{{ selectedYear }}:</span>
-            <span class="value">{{ totalTimeWorkedThisMonth }}</span>
+            <span class="label">Work Capacity:</span>
+            <span class="value">{{ selectedUserData.work_capacity }} Hours</span>
           </div>
+         
         </VCol>
       </VRow>
     </div>
