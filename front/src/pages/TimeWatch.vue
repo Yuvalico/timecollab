@@ -15,6 +15,7 @@ const message = ref('');
 const hasPunchIn = ref(false);
 const punchOutDescription = ref(''); // Add a ref to store the description
 const selectedUser = ref(authStore.user.email);
+const selectedUserData = ref([])
 const userList = ref([])
 const selectedCompany = ref(authStore.user.company_id);
 const companyList = ref([])
@@ -283,6 +284,31 @@ async function fetchUsers() {
   }
 }
 
+async function fetchSelf() {
+  try {
+    const userResponse = await api.get(`${endpoints.users.getByEmail}/${authStore.user.email}`);
+    // Access the first (and only) user object directly
+    const user = userResponse.data; 
+
+    selectedUserData.value = {
+      "company_id": user.company_id,
+      "company_name": user.company_name,
+      "email": user.email,
+      "is_active": user.is_active,
+      "mobile_phone": user.mobile_phone,
+      "permission": user.permission,
+      "role": user.role,
+      "salary": user.salary,
+      "work_capacity": user.work_capacity,
+      "full_name": `${user.first_name} ${user.last_name}` 
+    };
+
+    console.log('User fetched:', selectedUserData.value);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+  }
+}
+
 onMounted(async () => {
   checkPunchInStatus();
   buildCalendar(currentDate.value);
@@ -291,8 +317,11 @@ onMounted(async () => {
   for (let i = thisYear - 5; i <= thisYear + 5; i++) {
     availableYears.value.push(i);
   }
-  fetchCompanies();
-  fetchUsers();
+  fetchSelf()
+  if (authStore.isNetAdmin || authStore.isEmployer){
+    fetchCompanies();
+    fetchUsers();
+  }
 });
 
 watch(selectedMonth, (newMonth) => {
@@ -316,6 +345,7 @@ watch(selectedCompany, (newCompany) => {
 
 watch(selectedUser, (newUser) => {
   console.log('Selected User:', newUser);
+  selectedUserData.value = userList.value.find(user => user.email === selectedUser.value);
   updateCalendar();
 });
 
@@ -379,6 +409,14 @@ watch(selectedUser, (newUser) => {
 
 .info-item .value {
   font-size: 20px;        /* Increased font size for values */
+}
+
+.user-info .v-row {  /* Target v-row inside .user-info */
+  margin-bottom: 0px; 
+}
+  
+.user-info .v-col { /* Target v-col inside .user-info */
+  padding: 0 10px; /* Add some horizontal padding within columns */
 }
 
 table {
@@ -494,8 +532,6 @@ th, td {
   margin-top: 5px;
 }
 
-
-
 </style>
 
 <template>
@@ -529,9 +565,9 @@ th, td {
     <br>
 
     <div class="user-info"> 
-      <div class="info-item">
-        <span class="label">Company:</span>
-        <VSelect
+        <div class="info-item full-width"> 
+          <span class="label">Company:</span>
+          <VSelect
           v-if="authStore.isNetAdmin"
           v-model="selectedCompany"
           :items="companyList"
@@ -540,7 +576,8 @@ th, td {
         ></VSelect>
         <span v-else class="value">{{ authStore.user.company_name }}</span> 
       </div>
-      <div class="info-item">
+      
+      <div class="info-item full-width">
         <span class="label">User:</span>
         <VSelect
           v-if="authStore.isNetAdmin || authStore.isEmployer" 
@@ -552,10 +589,36 @@ th, td {
         <span v-else class="value">{{ authStore.user.f_name }} {{ authStore.user.l_name }}</span> 
       </div>
 
-      <div class="info-item">
-        <span class="label">Total time worked in {{ selectedMonth + 1}}/{{ selectedYear }}: </span>
-        <span class="value">{{ totalTimeWorkedThisMonth }}</span>
-      </div>
+       <VRow no-gutters>
+        <VCol cols="6" sm="6" md="6" lg="6"> 
+          <div class="info-item">
+            <span class="label">Email:</span>
+            <span class="value">{{ selectedUser }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Role:</span>
+            <span class="value">{{ selectedUserData.role }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Work Capacity:</span>
+            <span class="value">{{ selectedUserData.work_capacity }}</span>
+          </div>
+        </VCol>
+        <VCol cols="6" sm="6" md="6" lg="6"> 
+          <div class="info-item">
+            <span class="label">Phone:</span>
+            <span class="value">{{ selectedUserData.mobile_phone }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Salary:</span>
+            <span class="value">{{ selectedUserData.salary }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Total time worked in {{ selectedMonth + 1 }}/{{ selectedYear }}:</span>
+            <span class="value">{{ totalTimeWorkedThisMonth }}</span>
+          </div>
+        </VCol>
+      </VRow>
     </div>
 
     <br>

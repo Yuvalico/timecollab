@@ -10,7 +10,6 @@ const emit = defineEmits(['userCreated', 'userUpdated']);
 
 const showForm = ref(false);
 const isEditing = ref(false); // Flag to check if the form is in editing mode
-const userId = ref(null); // To store the user ID when editing
 const firstName = ref('');
 const lastName = ref('');
 const email = ref('');
@@ -23,7 +22,7 @@ const salary = ref(null);
 const workCapacity = ref(null);
 const companies = ref([]); // To hold the list of companies fetched from API
 
-const permissions = ref(['net_admin', 'employer', 'employee']);
+const permissions = ref(['Net Admin', 'Employer', 'Employee']);
 const requiredRule = (value) => !!value || 'Required';
 const emailRule = (value) => /.+@.+\..+/.test(value) || 'E-mail must be valid';
 
@@ -47,7 +46,6 @@ onMounted(fetchCompanies);
 function openForm(user = null) {
   if (user) {
     isEditing.value = true;
-    // userId.value = user.id;
     firstName.value = user.first_name;
     lastName.value = user.last_name;
     email.value = user.email;
@@ -55,7 +53,7 @@ function openForm(user = null) {
     password.value = ''; // Password might not be provided directly, depending on your logic
     selectedCompany.value = user.company_name;
     role.value = user.role;
-    permission.value = user.permission;
+    permission.value = permissions.value[user.permission];
     salary.value = user.salary;
     workCapacity.value = user.work_capacity;
   } else {
@@ -84,7 +82,7 @@ const submitForm = async () => {
   try {
     const method = isEditing.value ? 'put' : 'post';
     const url = isEditing.value
-      ? `${endpoints.users.update}/${userId.value}` 
+      ? `${endpoints.users.update}` 
       : endpoints.users.create;
 
     // Log data to be sent
@@ -116,9 +114,9 @@ const submitForm = async () => {
         company_name: selectedCompany.value,
         role: role.value,
         permission: {
-          'net_admin': 0,
-          'employer': 1,
-          'employee': 2
+          'Net Admin': 0,
+          'Employer': 1,
+          'Employee': 2
         }[permission.value],
         salary: salary.value,
         work_capacity: workCapacity.value,
@@ -214,7 +212,7 @@ defineExpose({
                 autocomplete="on"
                 type="password"
                 placeholder="············"
-                :rules="[requiredRule]"
+                :rules="isEditing ? [] : [requiredRule]"
               />
             </VCol>
 

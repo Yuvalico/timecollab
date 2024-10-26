@@ -86,6 +86,7 @@ def update_user():
         permission = data.get('permission')
         salary = data.get('salary')
         work_capacity = data.get('work_capacity')
+        password = data.get('password')
 
         # Get the user using SQLAlchemy
         user: User = User.query.get(user_email)
@@ -101,6 +102,9 @@ def update_user():
         user.permission = permission
         user.salary = salary
         user.work_capacity = work_capacity
+
+        if password:
+            user.pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         # Commit changes using SQLAlchemy
         db.session.commit()
