@@ -111,7 +111,7 @@ const handleLogin = async () => {
 
       <VCardText class="pt-2">
         <h4 class="text-h4 mb-1">
-          Welcome to Materio! 👋🏻
+          Welcome! 👋🏻
         </h4>
         <p class="mb-0">
           Please sign-in to your account and start the adventure
@@ -167,36 +167,6 @@ const handleLogin = async () => {
               </VBtn>
             </VCol>
 
-            <!-- create account -->
-            <VCol
-              cols="12"
-              class="text-center text-base"
-            >
-              <span>New on our platform?</span>
-              <RouterLink
-                class="text-primary ms-2"
-                to="/register"
-              >
-                Create an account
-              </RouterLink>
-            </VCol>
-
-            <VCol
-              cols="12"
-              class="d-flex align-center"
-            >
-              <VDivider />
-              <span class="mx-4">or</span>
-              <VDivider />
-            </VCol>
-
-            <!-- auth providers -->
-            <VCol
-              cols="12"
-              class="text-center"
-            >
-              <AuthProvider />
-            </VCol>
           </VRow>
         </VForm>
       </VCardText>
