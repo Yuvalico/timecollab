@@ -2,7 +2,9 @@
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Computed
+from sqlalchemy import func, DateTime, Integer
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.hybrid import hybrid_property
 
 db = SQLAlchemy()
 
@@ -60,15 +62,11 @@ class TimeStamp(db.Model):
     punch_out_timestamp = db.Column(db.DateTime(timezone=True))
     reporting_type = db.Column(db.String)
     detail = db.Column(db.Text)
-    total_work_time = db.Column(
-        db.Interval,
-        Computed('punch_out_timestamp - punch_in_timestamp', persisted=True),
-        nullable=True
-    )
+    total_work_time = db.Column(db.Integer, nullable=True) 
     last_update = db.Column(
-        db.DateTime(timezone=True),
+        DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=expression.text('CURRENT_TIMESTAMP AT TIME ZONE \'UTC\'')
     )
 
     entered_by_user = db.relationship(
@@ -83,6 +81,13 @@ class TimeStamp(db.Model):
         backref='timestamps'  # Add the backref here
     )
 
+    @hybrid_property
+    def total_work_time(self):
+        if self.punch_out_timestamp and self.punch_in_timestamp:
+            time_diff = self.punch_out_timestamp - self.punch_in_timestamp
+            return int(time_diff.total_seconds()) 
+        return None  # Or None if you prefer to handle nulls differently
+
     def to_dict(self):
         return {
             'uuid': str(self.uuid),
@@ -93,6 +98,6 @@ class TimeStamp(db.Model):
             'punch_out_timestamp': self.punch_out_timestamp.isoformat() if self.punch_out_timestamp else None,
             'reporting_type': self.reporting_type,
             'detail': self.detail,
-            'total_work_time': str(self.total_work_time) if self.total_work_time else None,
+            'total_work_time': self.total_work_time,
             'last_update': self.last_update.isoformat() if self.last_update else None,
         }

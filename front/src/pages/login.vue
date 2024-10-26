@@ -62,10 +62,6 @@ const handleLogin = async () => {
     const company_details = await api.get(`${endpoints.companies.getCompanyDetails}/${user_data.company_id}`)
     const company_data = company_details.data
 
-    // // Store the JWT token in localStorage
-    // localStorage.setItem('authToken', access_token);
-    // localStorage.setItem('refreshToken', refresh_token);
-    // localStorage.setItem('userPermission', permission);
     authStore.setUser({ email: form.value.email, 
       // id: user_data.id,
       f_name: user_data.first_name, 

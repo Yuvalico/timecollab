@@ -26,7 +26,7 @@ export const endpoints = {
         remove:             `${COMPANIES_ENDPOINT}/remove-company`,
         getActive:          `${COMPANIES_ENDPOINT}/active`,
         getAll:             `${COMPANIES_ENDPOINT}/`,
-        getCompanyUsers:    `${COMPANIES_ENDPOINT}/users`,
+        getCompanyUsers:    `${COMPANIES_ENDPOINT}`,   //finish with /users
         getCompanyDetails:  `${COMPANIES_ENDPOINT}`,
     },
     auth: {
@@ -37,10 +37,10 @@ export const endpoints = {
     timestamps: {
         create:         `${TIMESTAMP_ENDPOINT}/`,                   // POST
         getAll:         `${TIMESTAMP_ENDPOINT}/`,                   // GET
-        getRange:        `${TIMESTAMP_ENDPOINT}/getRange`,          // GET
+        getRange:       `${TIMESTAMP_ENDPOINT}/getRange`,           // GET
         punchOut:       `${TIMESTAMP_ENDPOINT}/`,                   // PUT
+        edit:           `${TIMESTAMP_ENDPOINT}`,                    // PUT - Require UUID
         punchInStatus:  `${TIMESTAMP_ENDPOINT}/punch_in_status`,    // GET
-        delete:         `${TIMESTAMP_ENDPOINT}/`,                   // DELETE
-        workTimeToday:  `${TIMESTAMP_ENDPOINT}/work_time_today`,
+        delete:         `${TIMESTAMP_ENDPOINT}`,                    // DELETE
     }
 };
