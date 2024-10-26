@@ -211,6 +211,7 @@ async function fetchTimeEntries(currentDate) {
       outTime: entry.punch_out_timestamp ? new Date(entry.punch_out_timestamp) : null, // Check for null
       description: entry.detail? entry.detail : null,
       total_time: entry.total_work_time,
+      punchType: entry.punch_type,
     }));
 
     // Iterate over the calendar data to populate events for each day
