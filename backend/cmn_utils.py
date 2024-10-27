@@ -159,3 +159,27 @@ def create_db(app, db):
             db.session.commit()
 
         engine.dispose()
+        
+def calculate_work_capacity(user, start_date, end_date):
+    # Calculate the number of weeks in the date range
+    num_weeks = (end_date - start_date).days / 7
+
+    # Calculate work capacity for the date range
+    work_capacity_per_week = float(user.work_capacity or 0)
+    work_capacity_for_range = work_capacity_per_week * num_weeks
+
+    return round(work_capacity_for_range, 2)  # Round to 2 decimal places
+
+def format_hours_to_hhmm(seconds):
+  """
+  Formats a duration in seconds to the HH:MM format.
+
+  Args:
+    seconds: The duration in seconds.
+
+  Returns:
+    A string representing the duration in HH:MM format.
+  """
+  hours = int(seconds // 3600)
+  minutes = int((seconds % 3600) // 60)
+  return f"{hours:02d}:{minutes:02d}"

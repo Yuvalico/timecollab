@@ -205,3 +205,34 @@ def get_company_details(company_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@companies_blueprint.route('/<string:company_id>/admins', methods=['GET'])
+@jwt_required()
+def get_company_admins(company_id):
+    try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        # Query the company by its ID
+        company = Company.query.get(company_id)
+
+        # Check if the company exists
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        # Permission check
+        if user_permission == E_PERMISSIONS.employee:
+            return jsonify({'error': 'Unauthorized to access this information'}), 403
+
+        if user_permission == E_PERMISSIONS.employer and user_company_id != company_id:
+            return jsonify({'error': 'Unauthorized to access this information'}), 403
+
+        # Get all admins associated with the company
+        admins = User.query.filter_by(company_id=company_id, permission=E_PERMISSIONS.employer).all()
+
+        # Convert the admins to dictionaries and include them in the response
+        admin_data = [admin.to_dict() for admin in admins]
+        return jsonify(admin_data), 200
+
+    except Exception as e:
+        # Handle any unexpected errors
+        return jsonify({'error': str(e)}), 500

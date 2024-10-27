@@ -5,6 +5,7 @@ from endpoints.auth import auth_blueprint
 from endpoints.companies import companies_blueprint
 from endpoints.users import users_blueprint
 from endpoints.timestamps import timestamps_bp
+from endpoints.reports import reports_bp
 from config import Config
 from dotenv import load_dotenv
 from models import db
@@ -41,6 +42,7 @@ app.register_blueprint(auth_blueprint, url_prefix=BASE_API+'/auth')
 app.register_blueprint(companies_blueprint, url_prefix=BASE_API + '/companies')
 app.register_blueprint(users_blueprint, url_prefix=BASE_API + '/users')
 app.register_blueprint(timestamps_bp, url_prefix=BASE_API + '/timestamps')
+app.register_blueprint(reports_bp, url_prefix=BASE_API + '/reports')
 
 # Error handler for 404 with CORS headers
 @app.errorhandler(404)
