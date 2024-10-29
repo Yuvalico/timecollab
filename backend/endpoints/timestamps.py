@@ -181,6 +181,9 @@ def edit(timestamp_uuid):
             timestamp.punch_type = data['punch_type']
         if 'detail' in data:
             timestamp.detail = data['detail']
+            
+        if 'reporting_type' in data:
+            timestamp.reporting_type = data['reporting_type']
 
         db.session.commit()
 

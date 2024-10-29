@@ -24,7 +24,7 @@
         </div>
     
         <VSelect
-          v-if="authStore.isNetAdmin"
+          v-if="authStore.isNetAdmin && (reportType === 'user' || reportType === 'company')"
           v-model="selectedCompany"
           :items="companyList"
           item-title="company_name"
@@ -108,20 +108,38 @@
             <VRow>
                 <VCol cols="3"> 
                   <p><strong>Email:</strong> {{ reportData.userDetails.email }}</p>
-                  <p><strong>Role:</strong> {{ reportData.userDetails.role }}</p>
                   <p><strong>Phone:</strong> {{ reportData.userDetails.phone }}</p>
+                  <p><strong>Role:</strong> {{ reportData.userDetails.role }}</p>
+                  <p v-if="authStore.isNetAdmin || authStore.isEmployer">
+                    <strong>Company: </strong> 
+                    <a href="#" @click.prevent="generateCompanyReport(getCompanyName(selectedCompany))">{{ getCompanyName(selectedCompany) }}</a>
+                  </p> 
+                  <p v-else><strong>Company: </strong> {{ getCompanyName(selectedCompany) }}</p> 
                 </VCol>
                 <VCol cols="3"> 
                   <p><strong>Salary:</strong> ${{ reportData.userDetails.salary }}</p>
                   <p><strong>Work Capacity:</strong> {{ reportData.userDetails.workCapacity }}</p>
+                  
                 </VCol>
               </VRow>
         </div>
-        <p>Dates Worked: {{ formattedDatesWorked }}</p>
-        <p>Dates Missed: {{ formattedDatesMissed }}</p>
-        <p>Total Hours Worked: {{ reportData.totalHoursWorked }}</p>
-        <p>Total Payment Required: ${{ parseFloat(reportData.totalPaymentRequired).toFixed(2) }}</p> 
-  
+
+        <div class="user-details"> 
+            <VRow>
+                <VCol cols="3"> 
+                    <p><strong>Days Worked:</strong> {{ reportData.daysWorked }}</p>
+                    <p><strong>Paid Days Off:</strong> {{ reportData.paidDaysOff }}</p>
+                    <p><strong>Unpaid Days Off:</strong> {{ reportData.unpaidDaysOff }}</p>
+                    <p><strong>Days Not Reported:</strong> {{ reportData.daysNotReported }}</p>
+                </VCol>
+                <VCol cols="3"> 
+                    <p><strong>Total Hours Worked: </strong>{{ reportData.totalHoursWorked }}</p>
+                    <p><strong>Total Payment Required: </strong> ${{ parseFloat(reportData.totalPaymentRequired).toFixed(2) }}</p> 
+                  
+                </VCol>
+              </VRow>
+        </div>
+
         <h3>Daily Breakdown</h3>
         <SimpleTable :headers="dailyBreakdownHeaders" :items="reportData.dailyBreakdown">
           <template v-slot:item.date="{ item }">
@@ -129,6 +147,12 @@
           </template>
           <template v-slot:item.hoursWorked="{ item }">
             {{ item.hoursWorked }}
+          </template>
+          <template v-slot:item.reportingType="{ item }">
+            <span v-if="item.reportingType === 'work'">Work</span>
+            <span v-else-if="item.reportingType === 'unpaidoff'">Unpaid Day Off</span>
+            <span v-else-if="item.reportingType === 'paidoff'">Paid Day Off</span>
+            <span v-else>Not Reported</span>
           </template>
         </SimpleTable>
       </div>
@@ -152,7 +176,7 @@
       </div>
         <SimpleTable :headers="reportHeaders" :items="reportData">
           <template v-slot:item.employeeName="{ item }">
-          {{ item.employeeName }}
+            <a href="#" @click.prevent="generateUserReport(item.userDetails.email)">{{ item.employeeName }}</a> 
           </template>
           <template v-slot:item.role="{ item }">
           {{ item.userDetails.role }}
@@ -164,6 +188,31 @@
           {{ item.userDetails.salary }}
           </template>
         </SimpleTable>
+      </div>
+      <div v-if="reportData && reportType === 'overview'" class="report-section">
+        <h3>Company Overview Report
+            <span class="date-range">({{ formattedDateRange }})</span> 
+        </h3>
+        <div class="company-summary">
+            <VRow>
+              <VCol cols="3">
+                <p><strong>Total Companies:</strong> {{ reportData.length }}</p>
+                <p><strong>Total Employees:</strong> {{ totalEmployeesOverview }}</p> 
+                
+              </VCol>
+              <VCol cols="3">
+                <p><strong>Total Salary:</strong> ${{ totalSalaryOverview }}</p> 
+              </VCol>
+            </VRow>
+          </div>
+        <SimpleTable :headers="companyOverviewHeaders" :items="reportData">
+          <template v-slot:item.companyName="{ item }">
+            <a href="#" @click.prevent="generateCompanyReport(item.companyName)">{{ item.companyName }}</a> 
+          </template>
+          <template v-slot:item.adminNames="{ item }"> 
+            {{ item.adminNames.join(', ') }}  
+          </template>
+          </SimpleTable>
       </div>
     </div>
   </template>
@@ -177,8 +226,8 @@
   const authStore = useAuthStore();
   
   // Filters
-  const selectedCompany = ref(null); 
-  const selectedUser = ref(null);
+  const selectedCompany = ref(authStore.user.company_id); 
+  const selectedUser = ref(authStore.user.email);
   const dateRangeType = ref('monthly');
   const selectedYear = ref(new Date().getFullYear());
   const selectedMonth = ref(new Date().getMonth());
@@ -201,14 +250,31 @@
     month: selectedMonth.value,
     startDate: startDate.value,
     endDate: endDate.value,
-    });
-  const reportType = ref('user'); 
-  const reportTypeOptions = ref([
-    { value: 'user', title: 'User Report' },
-    { value: 'company', title: 'Company Report' },
+});
+const reportType = ref('user'); 
+const reportTypeOptions = ref([
+  { value: 'user', title: 'User Report' },
+  { value: 'company', title: 'Company Report' },
 ]);
-  const availableYears = ref([]);
-  const availableMonths = ref([
+
+// Add conditional logic for Overview report
+if (authStore.isNetAdmin) {
+  reportTypeOptions.value.push({ 
+    value: 'overview', 
+    title: 'Company Overview' 
+  });
+}
+
+const companyOverviewHeaders = ref([
+  { text: 'Company Name', value: 'companyName' },
+  { text: 'Admin Users', value: 'adminNames' }, 
+  { text: 'Employees', value: 'numEmployees' },
+  { text: 'Total Hours Worked', value: 'totalHoursWorked' },
+  { text: 'Total Monthly Salary', value: 'totalMonthlySalary' },
+]);
+
+const availableYears = ref([]);
+const availableMonths = ref([
     { title: 'January', value: 0 },
     { title: 'February', value: 1 },
     { title: 'March', value: 2 },
@@ -230,7 +296,9 @@
   { text: 'Hours Worked', value: 'totalHoursWorked' },
   { text: 'Work Capacity', value: 'workCapacity' },
   { text: 'Days Worked', value: 'daysWorked' },
-  { text: 'Days Not Worked', value: 'daysNotWorked' },
+  { text: 'Paid Days Off', value: 'paidDaysOff' }, 
+  { text: 'Unpaid Days Off', value: 'unpaidDaysOff' }, 
+  { text: 'Days Not Reported', value: 'daysNotReported' }, 
   { text: 'Total Salary', value: 'totalPaymentRequired' },
 ]);
   
@@ -238,14 +306,24 @@
   const dailyBreakdownHeaders = ref([
     { text: 'Date', value: 'date' },
     { text: 'Hours Worked', value: 'hoursWorked' },
+    { text: 'Reporting Type', value: 'reportingType' }, 
   ]);
-  
+
+
   // Computed properties for filtering userList based on selectedCompany
   const filteredUserList = computed(() => {
     if (!selectedCompany.value) return userList.value;
     return userList.value.filter(user => user.company_id === selectedCompany.value);
   });
   
+  const totalEmployeesOverview = computed(() => {
+  return reportData.value.reduce((sum, company) => sum + company.numEmployees, 0);
+});
+
+const totalSalaryOverview = computed(() => {
+  return reportData.value.reduce((sum, company) => sum + company.totalMonthlySalary, 0);
+});
+
   const totalHoursWorked = computed(() => {
     let totalSeconds = 0;
     if (reportData.value) {
@@ -305,6 +383,10 @@
     }
   }
   
+  function getCompanyName(companyId) {
+  const company = companyList.value.find(c => c.company_id === companyId);
+  return company ? company.company_name : '';
+}
   async function fetchUsers() {
     try {
       const response = await api.get(`${endpoints.companies.getCompanyUsers}/${selectedCompany.value}/users`);
@@ -318,6 +400,33 @@
     }
   }
   
+  async function generateUserReport(userEmail) {
+  try {
+    reportType.value = 'user'; // Switch to "User Report"
+    selectedUser.value = userEmail; // Select the clicked user
+
+    // Generate the report with the current date range and company
+    await generateReport(); 
+  } catch (error) {
+    console.error('Error generating user report:', error);
+  }
+}
+
+  async function generateCompanyReport(companyName) {
+  try {
+    reportType.value = 'company'; // Switch to "Company Report"
+    const company = companyList.value.find(c => c.company_name === companyName);
+    if (company) {
+      selectedCompany.value = company.company_id; // Select the clicked company
+
+      // Generate the report with the current date range
+      await generateReport(); 
+    }
+  } catch (error) {
+    console.error('Error generating company report:', error);
+  }
+}
+
   async function generateReport() {
     try {
       const params = {
@@ -333,12 +442,14 @@
         params.end_date = endDate.value.toISOString();
       }
       
-      let endpoint = endpoints.reports.generateUser; 
-      if (reportType.value === 'company') {
-        endpoint = endpoints.reports.generateCompany; 
-      } else {
+        let endpoint = endpoints.reports.generateUser; 
+        if (reportType.value === 'company') {
+            endpoint = endpoints.reports.generateCompany; 
+        } else if (reportType.value === 'overview') {
+            endpoint = endpoints.reports.generateCompanyOverview; // Use the new endpoint
+        } else {
         params.user_email = selectedUser.value; 
-      }
+        }
       const response = await api.get(endpoint, { params });
       console.log( response.data) // Log the response data
       reportData.value = response.data;
@@ -357,7 +468,7 @@
   }
   
   function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
     return new Date(dateString).toLocaleDateString('en-US', options);
   }
   
@@ -372,6 +483,7 @@
       selectedCompany.value = authStore.user.company_id;
       fetchUsers(); // Call fetchUsers here to populate the user list
     }
+    generateReport()
   });
   
   watch(selectedCompany, (newCompany) => {

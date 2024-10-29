@@ -26,6 +26,12 @@ const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frida
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth());
 const availableYears = ref([]); 
+const reportingType = ref(null);
+const reportingTypeOptions = ref([
+  { value: 'work', title: 'Work' },
+  { value: 'unpaidoff', title: 'Unpaid Day Off' },
+  { value: 'paidoff', title: 'Paid Day Off' },
+]);
 const availableMonths = ref([
   { title: 'January', value: 0 },
   { title: 'February', value: 1 },
@@ -74,7 +80,7 @@ async function punchIn() {
     const response = await api.post(`${endpoints.timestamps.create}`, {
       user_email: authStore.user.email,
       punch_type: 0,  // 0 for automatic
-      reporting_type: null,
+      reporting_type: "work",
       detail: null
     });
     message.value = 'Punched in successfully';
@@ -132,7 +138,11 @@ const addEntry = (dayData) => {
 function calculateDailyTotal(events) {
   let totalTime = 0;
   events.forEach(event => {
-    totalTime += event.total_time; // Directly add the total_time in seconds
+    if (event.reporting_type === 'paidoff') {
+      totalTime += 8 * 3600; // Add 8 hours in seconds for paid days off
+    } else {
+      totalTime += event.total_time; // Otherwise, add the actual total_time
+    }
   });
   return totalTime
 }
@@ -212,6 +222,7 @@ async function fetchTimeEntries(currentDate) {
       description: entry.detail? entry.detail : null,
       total_time: entry.total_work_time,
       punchType: entry.punch_type,
+      reporting_type: entry.reporting_type
     }));
 
     // Iterate over the calendar data to populate events for each day
@@ -251,6 +262,7 @@ const updateCalendar = () => {
   console.log(currentDate.value);
   buildCalendar(currentDate.value); 
   fetchTimeEntries(currentDate.value);
+  checkPunchInStatus()
 };
 
 // Fetch companies from the API
@@ -310,6 +322,27 @@ async function fetchSelf() {
   }
 }
 
+function hasDayOff(dayData) {
+  if (dayData && dayData.events) {
+    return dayData.events.some(event => 
+      event.reporting_type === 'unpaidoff' || event.reporting_type === 'paidoff'
+    );
+  }
+  return false;
+}
+
+const hasCurrentDayOff = computed(() => {
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+
+  // Find the current day's data in the calendar
+  const currentDayData = calendarData.value.flatMap(week => Object.values(week))
+    .find(dayData => dayData.day === day);
+
+  return hasDayOff(currentDayData);
+});
 onMounted(async () => {
   checkPunchInStatus();
   buildCalendar(currentDate.value);
@@ -533,25 +566,35 @@ th, td {
   margin-top: 5px;
 }
 
+.day-off-message {
+  color: red; /* Or any color you prefer */
+  font-weight: bold;
+  margin-bottom: 10px; /* Add some spacing below the message */
+  font-size: 1.2em;
+}
+
 </style>
 
 <template>
   <div>
     <h2>Time Watch</h2>
     <div v-if="selectedUser === authStore.user.email" class="punch-buttons">
-      <VBtn @click="punchIn" :disabled="hasPunchIn" color="primary" class="punch-button">Punch In</VBtn>
+      <VBtn @click="punchIn" :disabled="hasPunchIn || hasCurrentDayOff" color="primary" class="punch-button">Punch In</VBtn>
       <div class="punch-out-group">
-        <VBtn @click="punchOut" :disabled="!hasPunchIn" color="primary" class="punch-button">Punch Out</VBtn>
+        <VBtn @click="punchOut" :disabled="!hasPunchIn || hasCurrentDayOff" color="primary" class="punch-button">Punch Out</VBtn>
         <VTextarea
-          v-if="hasPunchIn"
-          v-model="punchOutDescription"
-          label="Task Description"
-          placeholder="Enter task description"
-          class="description-field"
-          auto-grow
-          rows="1" 
+        v-if="hasPunchIn"
+        v-model="punchOutDescription"
+        label="Task Description"
+        placeholder="Enter task description"
+        class="description-field"
+        auto-grow
+        rows="1" 
         />
       </div>
+    </div>
+    <div v-if="hasCurrentDayOff" class="day-off-message">
+      Day Off - Cannot Punch In/Out
     </div>
     <div v-if="message">
       <VAlert
@@ -646,7 +689,7 @@ th, td {
           <div v-if="item[dayName]?.day" class="day-number-frame">
             <span class="day-number">{{ item[dayName].day }}</span>
           </div>
-          <IconBtn v-if="item[dayName]?.day" class="add-entry-button" @click="addEntry(item[dayName])"> 
+          <IconBtn v-if="item[dayName]?.day && !hasDayOff(item[dayName])" class="add-entry-button" @click="addEntry(item[dayName])"> 
             <VIcon icon="ri-add-circle-fill" color="primary" size="18" /> 
           </IconBtn>
           <span class="total-time" v-if="item[dayName]?.events?.length">
@@ -657,7 +700,15 @@ th, td {
               <li v-for="event in item[dayName].events" :key="event.id">
                 <VTooltip location="top">  
                   <template v-slot:activator="{ props }">
-                    <span v-bind="props">{{ formatTime(event.inTime) }} - {{ formatTime(event.outTime) }}</span>
+                    <span v-if="event.reporting_type === 'work'" v-bind="props">
+                      {{ formatTime(event.inTime) }} - {{ formatTime(event.outTime) }}
+                    </span>
+                    <span v-if="event.reporting_type === 'unpaidoff'" v-bind="props">
+                      <strong>Unpaid Day Off</strong>
+                    </span>
+                    <span v-if="event.reporting_type === 'paidoff'" v-bind="props">
+                      <strong>Paid Day Off</strong>
+                    </span>
                   </template>
                   <span>{{ event.description }}</span>
                 </VTooltip>
@@ -672,7 +723,7 @@ th, td {
           </div>
         </div>
         <timestampForm ref="timestampFormRef" 
-                 @timestampCreated="updateCalendar" 
+                 @timestampCreated="updateCalendar"  
                  @timestampUpdated="updateCalendar"
                  :selectedUser="selectedUser" /> 
       </template>

@@ -47,7 +47,8 @@ export const endpoints = {
         delete:         `${TIMESTAMP_ENDPOINT}`,                    // DELETE
     },
     reports: {
-        generateUser:         `${REPORT_ENDPOINT}/generate-user`,                 
-        generateCompany:      `${REPORT_ENDPOINT}/generate_company`,                 
+        generateUser:               `${REPORT_ENDPOINT}/generate-user`,                 
+        generateCompany:            `${REPORT_ENDPOINT}/generate-company`,                 
+        generateCompanyOverview:    `${REPORT_ENDPOINT}/generate-company-overview`,                 
     }
 };

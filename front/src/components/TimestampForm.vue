@@ -6,8 +6,16 @@
         </VCardTitle>
         <VCardText>
           <VForm @submit.prevent="submitForm">
+            <VCol cols="12">
+              <VSelect
+                v-model="reportingType"
+                :items="reportingTypeOptions"
+                label="Reporting Type"
+                :rules="[requiredRule]"
+              />
+            </VCol>
             <VRow>
-              <VCol cols="12">
+              <VCol v-if="reportingType === 'work'" cols="12">
                 <VTextField
                   v-model="inTime"
                   label="In Time"
@@ -15,7 +23,7 @@
                   :rules="[requiredRule]"
                 />
               </VCol>
-              <VCol cols="12">
+              <VCol v-if="reportingType === 'work'" cols="12">
                 <VTextField
                   v-model="outTime"
                   label="Out Time"
@@ -65,6 +73,12 @@
   const IsoInTime = ref(null);
   const IsoOutTime = ref(null);
   const description = ref(null);
+  const reportingType = ref(null);
+const reportingTypeOptions = ref([
+  { value: 'work', title: 'Work' },
+  { value: 'unpaidoff', title: 'Unpaid Day Off' },
+  { value: 'paidoff', title: 'Paid Day Off' },
+]);
   
   const props = defineProps({
     selectedUser: {  // Add a prop for the selected user
@@ -108,6 +122,7 @@
         inTime.value = timestamp.inTime ? formatTime(timestamp.inTime): null;
         outTime.value = timestamp.outTime ? formatTime(timestamp.outTime): null;
         description.value = timestamp.description;
+        reportingType.value = timestamp.reporting_type; // Set reporting type from timestamp
     } else {
         isEditing.value = false;
         const day = timestamp.getDate(); 
@@ -116,6 +131,7 @@
         console.log(day, month, year);
         IsoInTime.value = new Date(year, month, day,1,1,1);
         IsoOutTime.value = new Date(year, month, day,1,1,1);
+        reportingType.value = null;
 
         resetForm();
     }
@@ -139,6 +155,7 @@
             description: description.value,
             isoin: IsoInTime.value,
             isoout: IsoOutTime.value,
+            reporting_type: reportingType.value,
         });
         
         const method = isEditing.value ? 'put' : 'post';
@@ -153,11 +170,11 @@
             'Content-Type': 'application/json',
         },
         data: {
-            punch_in_timestamp: updateIsoTime(inTime.value, IsoInTime.value),
-            punch_out_timestamp: updateIsoTime(outTime.value, IsoOutTime.value),
+            punch_in_timestamp: reportingType.value === 'work' ? updateIsoTime(inTime.value, IsoInTime.value) : updateIsoTime('00:00', IsoInTime.value), // Set punch_in_timestamp to 00:00 if not 'work'
+            punch_out_timestamp: reportingType.value === 'work' ? updateIsoTime(outTime.value, IsoOutTime.value) : updateIsoTime('00:00', IsoOutTime.value), // Set punch_out_timestamp to 00:00 if not 'work'
             detail: description.value,
             punch_type: 1,
-            reporting_type: null, // Or provide the appropriate value
+            reporting_type: reportingType.value,
              
             ...( isEditing.value ? {} : {
                 user_email: props.selectedUser, // Use selectedUser from props
