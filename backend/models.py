@@ -36,6 +36,9 @@ class User(db.Model):
     is_active = db.Column(db.Boolean)
     salary = db.Column(db.Numeric)
     work_capacity = db.Column(db.Numeric)
+    employment_start = db.Column(db.DateTime(timezone=True))  # Add employment_start
+    employment_end = db.Column(db.DateTime(timezone=True))    # Add employment_end
+    weekend_choice = db.Column(db.String(20))              # Add weekend_choice
 
     def to_dict(self):
         return {
@@ -43,13 +46,15 @@ class User(db.Model):
             'last_name': self.last_name,
             'mobile_phone': self.mobile_phone,
             'email': self.email,
-            'company_id': str(self.company_id),  # Convert UUID to string
+            'company_id': str(self.company_id),
             'role': self.role,
             'permission': self.permission,
-            # Exclude 'pass_hash' for security reasons
             'is_active': self.is_active,
-            'salary': str(self.salary) if self.salary else None,  # Handle potential None values
-            'work_capacity': str(self.work_capacity) if self.work_capacity else None
+            'salary': str(self.salary) if self.salary else None,
+            'work_capacity': str(self.work_capacity) if self.work_capacity else None,
+            'employment_start': self.employment_start.isoformat() if self.employment_start else None,  # Add to to_dict
+            'employment_end': self.employment_end.isoformat() if self.employment_end else None,      # Add to to_dict
+            'weekend_choice': self.weekend_choice                                                # Add to to_dict
         }
         
 class TimeStamp(db.Model):

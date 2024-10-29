@@ -96,7 +96,7 @@ async function punchOut() {
     const response = await api.put(`${endpoints.timestamps.punchOut}`, {
       user_email: authStore.user.email,
       entered_by: authStore.user.email,
-      reporting_type: null,
+      reporting_type: "work",
       detail: punchOutDescription.value
     });
     message.value = response.data.message;
@@ -128,6 +128,7 @@ async function deleteEntry(event) {
     }
   }
 }
+
 
 const addEntry = (dayData) => {
   // Create a new event object with the date from dayData
@@ -289,6 +290,7 @@ async function fetchUsers() {
       "role": user.role,
       "salary": user.salary,
       "work_capacity": user.work_capacity,
+      "weekend_choice": user.weekend_choice,
       "full_name": `${user.first_name} ${user.last_name}` // Added full_name
     }));
     console.log('Users fetched:', userList.value);
@@ -313,6 +315,7 @@ async function fetchSelf() {
       "role": user.role,
       "salary": user.salary,
       "work_capacity": user.work_capacity,
+      "weekend_choice": user.weekend_choice,
       "full_name": `${user.first_name} ${user.last_name}` 
     };
 
@@ -334,15 +337,37 @@ function hasDayOff(dayData) {
 const hasCurrentDayOff = computed(() => {
   const today = new Date();
   const day = today.getDate();
+  const dayIndex = today.getDay();
+  const dayName = weekDays[dayIndex];
   const month = today.getMonth();
   const year = today.getFullYear();
 
+  return isDayOff(day, dayName);
+});
+
+function isDayOff(day, dayName){
+  
+  if (!selectedUserData.value.weekend_choice)
+    return false;
+  
+  if (isWeekend(dayName)){
+    return true;
+  }  
   // Find the current day's data in the calendar
   const currentDayData = calendarData.value.flatMap(week => Object.values(week))
     .find(dayData => dayData.day === day);
 
-  return hasDayOff(currentDayData);
-});
+    return hasDayOff(currentDayData)
+}
+
+function isWeekend(dayName){
+  if(!selectedUserData.value.weekend_choice)
+    return false;
+  const weekendDays = selectedUserData.value.weekend_choice.split(',');
+  const isDayOff = weekendDays.some(day => day.toLowerCase() === dayName.toLowerCase());
+    return isDayOff
+}
+
 onMounted(async () => {
   checkPunchInStatus();
   buildCalendar(currentDate.value);
@@ -572,6 +597,9 @@ th, td {
   margin-bottom: 10px; /* Add some spacing below the message */
   font-size: 1.2em;
 }
+.weekend{
+  color-scheme:"primary";
+}
 
 </style>
 
@@ -685,15 +713,19 @@ th, td {
 
     <SimpleTable :headers="calendarHeaders" :items="calendarData">
       <template v-for="dayName in weekDays" :key="dayName" v-slot:[`item.${dayName}`]="{ item }">
-        <div class="calendar-cell"> 
+        <div class="calendar-cell"
+        :style="{ backgroundColor: isWeekend(dayName) && item[dayName]?.day ? '#d3d3d3 ' : 'inherit' }"> 
           <div v-if="item[dayName]?.day" class="day-number-frame">
             <span class="day-number">{{ item[dayName].day }}</span>
           </div>
-          <IconBtn v-if="item[dayName]?.day && !hasDayOff(item[dayName])" class="add-entry-button" @click="addEntry(item[dayName])"> 
+          <IconBtn v-if="item[dayName]?.day && !isDayOff(item[dayName].day, dayName)" class="add-entry-button" @click="addEntry(item[dayName])"> 
             <VIcon icon="ri-add-circle-fill" color="primary" size="18" /> 
           </IconBtn>
           <span class="total-time" v-if="item[dayName]?.events?.length">
             Total: {{ calculateDailyTotalString(item[dayName].events) }}
+          </span>
+          <span class="weekend" v-if="isWeekend(dayName)  && item[dayName]?.day">
+            <strong>Weekend!</strong>
           </span>
           <div v-if="item[dayName]?.events?.length" class="event-list">
             <ul>

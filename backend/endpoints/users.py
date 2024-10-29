@@ -3,6 +3,7 @@ from models import User, Company, db
 import bcrypt
 from cmn_utils import *
 from cmn_defs import *
+from datetime import datetime, timezone
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 
@@ -27,6 +28,9 @@ def create_user():
         permission = data.get('permission')
         salary = data.get('salary')
         work_capacity = data.get('work_capacity')
+        employment_start_str = data.get('employment_start')
+        employment_end_str = data.get('employment_end')
+        weekend_choice = data.get('weekend_choice')
 
         permission_int = E_PERMISSIONS.to_enum(permission)
         if permission_int is None:
@@ -42,6 +46,12 @@ def create_user():
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
+        try:
+            employment_start = datetime.fromisoformat(employment_start_str.replace('Z', '+00:00')) if employment_start_str else None
+            employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00')) if employment_end_str else None
+        except ValueError:
+            return jsonify({'error': 'Invalid datetime format'}), 400
+
         # Create new user object
         new_user = User(
             email=email,
@@ -53,7 +63,10 @@ def create_user():
             pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
             is_active=True,
             salary=salary,
-            work_capacity=work_capacity
+            work_capacity=work_capacity,
+            employment_start=employment_start,
+            employment_end=employment_end,
+            weekend_choice=weekend_choice
         )
 
         # Add and commit using SQLAlchemy
@@ -87,6 +100,9 @@ def update_user():
         salary = data.get('salary')
         work_capacity = data.get('work_capacity')
         password = data.get('password')
+        employment_start_str = data.get('employment_start')
+        employment_end_str = data.get('employment_end')
+        weekend_choice = data.get('weekend_choice')
 
         # Get the user using SQLAlchemy
         user: User = User.query.get(user_email)
@@ -94,14 +110,31 @@ def update_user():
             return jsonify({'error': 'User not found'}), 404
 
         # Update user attributes
-        user.first_name = first_name
-        user.last_name = last_name
-        user.mobile_phone = mobile_phone
-        user.email = email
-        user.role = role
-        user.permission = permission
-        user.salary = salary
-        user.work_capacity = work_capacity
+        if first_name:
+            user.first_name = first_name
+        if last_name:
+            user.last_name = last_name
+        if mobile_phone:
+            user.mobile_phone = mobile_phone
+        if email:
+            user.email = email
+        if role:
+            user.role = role
+        if permission:
+            user.permission = permission
+        if salary:
+            user.salary = salary
+        if work_capacity:
+            user.work_capacity = work_capacity
+        if employment_start_str:
+            employment_start = datetime.fromisoformat(employment_start_str.replace('Z', '+00:00')) if employment_start_str else None
+            user.employment_start = employment_start
+        if employment_end_str:
+            employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00')) if employment_end_str else None
+            user.employment_end = employment_end
+        if weekend_choice:
+            user.weekend_choice = weekend_choice
+        
 
         if password:
             user.pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')

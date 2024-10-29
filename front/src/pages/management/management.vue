@@ -36,6 +36,8 @@ const userHeaders = computed(() => {
     { text: 'Role', value: 'role' },
     { text: 'Salary', value: 'salary' },
     { text: 'Work Capacity', value: 'work_capacity' },
+    { text: 'Employment Start', value: 'employment_start' },
+    { text: 'Weekend Choice', value: 'weekend_choice' },
     { text: 'Permission', value: 'permission' },
     // { text: '', value: 'actions', align: 'center', sortable: false },
   ];
@@ -166,6 +168,22 @@ function editCompany(company) {
   fetchCompanies();
 }
 
+
+function formatWeekendChoice(weekendChoice) {
+  if (weekendChoice) {
+    return weekendChoice.split(',').join(', '); // Add a space after each comma
+  }
+  return '';
+}
+
+function formatDate(dateString) {
+  if (dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  }
+  return '';
+}
+
 const companyFormRef = ref(null); // Ref for the CompanyForm component
 
 const removeCompany = async (company) => {
@@ -231,6 +249,12 @@ onMounted(() => {
               />
             </div>
           </template>
+          <template v-slot:item.employment_start="{ item }">
+            {{ formatDate(item.employment_start) }} 
+          </template>
+          <template v-slot:item.weekend_choice="{ item }">
+            {{ formatWeekendChoice(item.weekend_choice) }} 
+          </template>
         </SimpleTable>
       </VCard>
     </VCol>
@@ -254,6 +278,7 @@ onMounted(() => {
               />
             </div>
           </template>
+          
         </SimpleTable>
       </VCard>
     </VCol>

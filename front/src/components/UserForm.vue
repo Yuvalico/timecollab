@@ -19,6 +19,19 @@ const role = ref('');
 const permission = ref(null);
 const salary = ref(null);
 const workCapacity = ref(null);
+const employmentStart = ref(null);
+const employmentEnd = ref(null);
+const weekendChoice = ref(null);
+const selectedWeekDays = ref([]);
+const weekDays = ref([
+  'Sunday', 
+  'Monday', 
+  'Tuesday', 
+  'Wednesday', 
+  'Thursday', 
+  'Friday', 
+  'Saturday'
+]);
 const companies = ref([]); // To hold the list of companies fetched from API
 
 const permissions = ref(['Net Admin', 'Employer', 'Employee']);
@@ -55,6 +68,9 @@ function openForm(user = null) {
     permission.value = permissions.value[user.permission];
     salary.value = user.salary;
     workCapacity.value = user.work_capacity;
+    employmentStart.value = user.employment_start ? new Date(user.employment_start) : null;
+    employmentEnd.value = user.employment_end ? new Date(user.employment_end) : null;
+    selectedWeekDays.value = user.weekend_choice ? user.weekend_choice.split(',') : []; 
   } else {
     isEditing.value = false;
     resetForm();
@@ -74,6 +90,9 @@ function resetForm() {
   permission.value = null;
   salary.value = null;
   workCapacity.value = null;
+  employmentStart.value = null;
+  employmentEnd.value = null;
+  selectedWeekDays.value = [];
 }
 
 // Submit handler
@@ -96,6 +115,8 @@ const submitForm = async () => {
       permission: permission.value,
       salary: salary.value,
       work_capacity: workCapacity.value,
+      employment_start: employmentStart.value ? employmentStart.value.toISOString() : null,
+      weekend_choice: selectedWeekDays.value.join(','), 
     });
 
     const response = await api({
@@ -119,6 +140,8 @@ const submitForm = async () => {
         }[permission.value],
         salary: salary.value,
         work_capacity: workCapacity.value,
+        employment_start: employmentStart.value ? employmentStart.value.toISOString() : null,
+        weekend_choice: selectedWeekDays.value.join(','), 
       },
     });
 
@@ -227,6 +250,15 @@ defineExpose({
                 :rules="[requiredRule]"
               />
             </VCol>
+            
+            <VRow>
+              <p style="margin-left: 30px; margin-top: 20px;"> <strong>Employment Start Date Selection </strong> </p> 
+              <VCol cols="12"> 
+                <VDatePicker v-model="employmentStart" label="Employment Start"></VDatePicker>
+              </VCol>
+  
+            </VRow>
+            
 
             <VCol cols="12">
               <VTextField
@@ -270,6 +302,23 @@ defineExpose({
               />
             </VCol>
 
+            <p style="margin: 15px;"> <strong>Weekend Selection </strong> </p> 
+            <VRow>
+              <VCol cols="12">
+                  <VCardText class="weekend-selection"> 
+                    <VRow>
+                      <VCol
+                        v-for="day in weekDays"
+                        :key="day"
+                        cols="12"
+                        md="6"
+                      >
+                        <VCheckbox v-model="selectedWeekDays" :label="day" :value="day" density="compact"></VCheckbox>
+                      </VCol>
+                    </VRow>
+                  </VCardText>
+              </VCol>
+              </VRow>
             <VCol cols="12" class="d-flex justify-end">
               <VBtn
                 color="secondary"
@@ -293,3 +342,17 @@ defineExpose({
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.weekend-selection .v-field__label {
+  position: absolute;
+  top: -15px; /* Adjust as needed */
+  left: 0;
+  font-size: 14px; /* Adjust font size for readability */
+  color: #000; /* Adjust color for contrast */
+}
+
+.end-date-picker {
+  padding-left: 16px; /* Add some padding to the left of the second date picker */
+}
+</style>
