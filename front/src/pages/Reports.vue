@@ -127,29 +127,33 @@
         <div class="user-details"> 
             <VRow>
                 <VCol cols="3"> 
-                    <p><strong>Days Worked:</strong> {{ reportData.daysWorked }}</p>
-                    <p><strong>Paid Days Off:</strong> {{ reportData.paidDaysOff }}</p>
-                    <p><strong>Unpaid Days Off:</strong> {{ reportData.unpaidDaysOff }}</p>
-                    <p><strong>Days Not Reported:</strong> {{ reportData.daysNotReported }}</p>
+                  <p><strong>Potential Work Days:</strong> {{ reportData.potentialWorkDays }}</p> 
+                  <p><strong>Days Worked:</strong> {{ reportData.daysWorked }}</p>
+                  <p><strong>Paid Days Off:</strong> {{ reportData.paidDaysOff }}</p>
+                  <p><strong>Unpaid Days Off:</strong> {{ reportData.unpaidDaysOff }}</p>
+                  <p><strong>Days Not Reported:</strong> {{ reportData.daysNotReported }}</p>
                 </VCol>
                 <VCol cols="3"> 
-                    <p><strong>Total Hours Worked: </strong>{{ reportData.totalHoursWorked }}</p>
-                    <p><strong>Total Payment Required: </strong> ${{ parseFloat(reportData.totalPaymentRequired).toFixed(2) }}</p> 
+                  <p><strong>Total Hours Worked: </strong>{{ reportData.totalHoursWorked }}</p>
+                  <p><strong>Total Payment Required: </strong> ${{ parseFloat(reportData.totalPaymentRequired).toFixed(2) }}</p> 
                   
                 </VCol>
               </VRow>
         </div>
 
         <h3>Daily Breakdown</h3>
-        <SimpleTable :headers="dailyBreakdownHeaders" :items="reportData.dailyBreakdown">
+        <SimpleTable :headers="dailyBreakdownHeaders" :items="reportData.dailyBreakdown" :rowBgColor="item => isWeekend(new Date(item.date).toLocaleDateString('en-US', { weekday: 'long' })) ? '#d3d3d3' : null" >
           <template v-slot:item.date="{ item }">
+            <span>
             {{ formatDate(item.date) }}
+          </span>
           </template>
           <template v-slot:item.hoursWorked="{ item }">
             {{ item.hoursWorked }}
           </template>
           <template v-slot:item.reportingType="{ item }">
-            <span v-if="item.reportingType === 'work'">Work</span>
+            <span v-if="isWeekend(new Date(item.date).toLocaleDateString('en-US', { weekday: 'long' }))">Weekend</span>
+            <span v-else-if="item.reportingType === 'work'">Work</span>
             <span v-else-if="item.reportingType === 'unpaidoff'">Unpaid Day Off</span>
             <span v-else-if="item.reportingType === 'paidoff'">Paid Day Off</span>
             <span v-else>Not Reported</span>
@@ -326,7 +330,7 @@ const totalSalaryOverview = computed(() => {
 
   const totalHoursWorked = computed(() => {
     let totalSeconds = 0;
-    if (reportData.value) {
+    if (reportData.value && reportData.value.length > 0) {
     reportData.value.forEach(user => {
       const [hours, minutes] = user.totalHoursWorked.split(':').map(Number);
       totalSeconds += hours * 3600 + minutes * 60;
@@ -374,6 +378,16 @@ const totalSalaryOverview = computed(() => {
     return reportData.value.datesMissed.map(date => formatDate(date)).join(', ');
   });
   
+
+  function isWeekend(dayName){
+  if(!reportData.value.userDetails.weekendChoice)
+    return false;
+  const weekendDays = reportData.value.userDetails.weekendChoice.split(',');
+  const isDayOff = weekendDays.some(day => day.toLowerCase() === dayName.toLowerCase());
+    return isDayOff
+}
+
+
   async function fetchCompanies() {
     try {
       const response = await api.get(endpoints.companies.getActive);
@@ -404,12 +418,14 @@ const totalSalaryOverview = computed(() => {
   try {
     reportType.value = 'user'; // Switch to "User Report"
     selectedUser.value = userEmail; // Select the clicked user
-
+    
     // Generate the report with the current date range and company
     await generateReport(); 
   } catch (error) {
     console.error('Error generating user report:', error);
   }
+  fetchUsers();
+  selectedUser.value = userEmail; // Select the clicked user
 }
 
   async function generateCompanyReport(companyName) {
@@ -616,6 +632,18 @@ const totalSalaryOverview = computed(() => {
     flex: 1 1 auto;  /* Allow both growing and shrinking */
     max-width: 200px; /* Set a maximum width */ 
     width: auto;
+  }
+
+  .v-table >>> tbody tr { /* Target all rows in the table */
+    background-color: inherit; /* Reset background color to inherit */
+  }
+  
+  .v-table >>> tbody tr :first-child { /* Target the first cell in each row */
+    background-color: inherit; /* Reset background color to inherit */
+  }
+  
+  .v-table >>> tbody tr.weekend { /* Target rows with the class 'weekend' */
+    background-color: #d3d3d3; /* Set the background color for weekend rows */
   }
 
 </style>

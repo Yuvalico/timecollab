@@ -6,7 +6,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-for="(item, index) in items" :key="index">
+      <tr v-for="(item, index) in items" :key="index"  :style="{ backgroundColor: rowBgColor(item) }">
         <td v-for="header in headers" :key="header.value">
           <!-- Use default slot content if no slot is provided -->
           <slot :name="`item.${header.value}`" :item="item">
@@ -21,7 +21,11 @@
 <script setup>
 const props = defineProps({
   headers: Array,
-  items: Array
+  items: Array,
+   rowBgColor: {
+    type: Function, 
+    default: function (){return "inherit";},
+  }
 });
 </script>
 

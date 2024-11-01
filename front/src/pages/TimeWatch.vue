@@ -711,7 +711,7 @@ th, td {
       ></VSelect>
     </div>
 
-    <SimpleTable :headers="calendarHeaders" :items="calendarData">
+    <SimpleTable :headers="calendarHeaders" :items="calendarData" >
       <template v-for="dayName in weekDays" :key="dayName" v-slot:[`item.${dayName}`]="{ item }">
         <div class="calendar-cell"
         :style="{ backgroundColor: isWeekend(dayName) && item[dayName]?.day ? '#d3d3d3 ' : 'inherit' }"> 

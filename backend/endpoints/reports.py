@@ -76,13 +76,15 @@ def generate_user_report():
 
         if user_email:
             query = query.filter_by(user_email=user_email)
-        elif company_id:
-            query = query.join(User).filter(User.company_id == company_id)
+        else:
+            return jsonify({'error': 'Invalid user entered'}), 400
+        # elif company_id:
+        #     query = query.join(User).filter(User.company_id == company_id)
 
         time_stamps = query.all()
 
         # Generate the report data
-        report = generate_user_report_data(time_stamps, start_date, end_date)
+        report = generate_user_report_data(user_email, time_stamps, start_date, end_date)
         return jsonify(report)
 
     except Exception as e:
@@ -146,7 +148,7 @@ def generate_company_summary_report():
         time_stamps = query.all()
 
         # Generate the company summary report data
-        report = generate_company_summary_data(time_stamps, start_date, end_date)
+        report = generate_company_summary_data(company_id, time_stamps, start_date, end_date)
         return jsonify(report)
 
     except Exception as e:
@@ -213,11 +215,11 @@ def generate_company_overview_report():
         return jsonify({'error': 'Failed to generate report'}), 500
 
 
-def generate_user_report_data(time_stamps, start_date, end_date):
-    if not time_stamps:
-        return {}  # Return empty object if no time stamps found
+def generate_user_report_data(user_email, time_stamps, start_date, end_date):
+    # if not time_stamps:
+    #     return {}  # Return empty object if no time stamps found
 
-    user: User = time_stamps[0].user
+    user: User = User.query.filter_by(email=user_email).first()
     employee_name = user.first_name + " " + user.last_name
     total_hours_worked = 0
     daily_breakdown = []
@@ -226,36 +228,39 @@ def generate_user_report_data(time_stamps, start_date, end_date):
     unpaid_days_off = 0
     days_not_reported = 0
     days_worked = 0
-   
+    potential_work_days = 0
     current_date = start_date
     while current_date <= end_date:
         found_entry = False
         work_type = None
         daily_hours = 0
-        for ts in time_stamps:
-            if ts.punch_in_timestamp.date() == current_date.date():
-                found_entry = True
-                if ts.reporting_type == "work":
-                    work_type = "work"
-                    days_worked += 1
-                    daily_hours += ts.total_work_time or 0
+        if current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(',')):  # potential_work_days += 1
+            potential_work_days += 1
+            for ts in time_stamps:
+                if ts.punch_in_timestamp.date() == current_date.date():
+                    found_entry = True
+                    if ts.reporting_type == "work":
+                        work_type = "work"
+                        days_worked += 1
+                        daily_hours += ts.total_work_time or 0
+                        
+                    elif ts.reporting_type == 'paidoff':
+                        paid_days_off += 1
+                        daily_hours = 8 * 3600
+                        work_type = ts.reporting_type
+                        break
+                    elif ts.reporting_type == 'unpaidoff':
+                        unpaid_days_off += 1
+                        daily_hours = 0
+                        work_type = ts.reporting_type
+                        break
                     
-                elif ts.reporting_type == 'paidoff':
-                    paid_days_off += 1
-                    daily_hours = 8 * 3600
-                    work_type = ts.reporting_type
                     break
-                elif ts.reporting_type == 'unpaidoff':
-                    unpaid_days_off += 1
-                    daily_hours = 0
-                    work_type = ts.reporting_type
-                    break
-                
-                break
-        if not found_entry:
-            days_not_reported += 1
+            if not found_entry:
+                days_not_reported += 1
             
-        total_hours_worked += daily_hours
+            total_hours_worked += daily_hours
+
         daily_breakdown.append({
             "date": current_date.strftime('%Y-%m-%d'),
             "hoursWorked": format_hours_to_hhmm(daily_hours),
@@ -271,6 +276,7 @@ def generate_user_report_data(time_stamps, start_date, end_date):
         "paidDaysOff": paid_days_off,        # Add paidDaysOff to the report
         "unpaidDaysOff": unpaid_days_off,    # Add unpaidDaysOff to the report
         "daysNotReported": days_not_reported,  # Add daysNotReported to the report
+        "potentialWorkDays": potential_work_days, 
         "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),
         "totalPaymentRequired": round(total_payment_required, 2),
         "dailyBreakdown": daily_breakdown,
@@ -279,24 +285,23 @@ def generate_user_report_data(time_stamps, start_date, end_date):
             "role": user.role,
             "phone": user.mobile_phone,
             "salary": salary,  # Use the float value directly
-            "workCapacity": float(user.work_capacity or 0)  # Handle potential None, convert to float
+            "workCapacity": float(user.work_capacity or 0),  # Handle potential None, convert to float
+            "weekendChoice": user.weekend_choice
         }
     }
 
     return report
 
-def generate_company_summary_data(time_stamps, start_date, end_date):
-    if not time_stamps:
-        return {}  # Return empty object if no time stamps found
+def generate_company_summary_data(company_id, time_stamps, start_date, end_date):
+    # if not time_stamps:
+    #     return {}  # Return empty object if no time stamps found
 
     # Group time stamps by user
     time_stamps_by_user = {}  
-    for ts in time_stamps:
-         time_stamps_by_user.setdefault(ts.user_email, []).append(ts)  # Use setdefault
-
+    
+    users: User = User.query.filter_by(company_id=company_id, is_active=True).all() 
     report = []
-    for user_email, user_time_stamps in time_stamps_by_user.items():
-        user = user_time_stamps[0].user
+    for user in users:
         employee_name = user.first_name + " " + user.last_name
         salary = float(user.salary or 0)
 
@@ -311,7 +316,8 @@ def generate_company_summary_data(time_stamps, start_date, end_date):
         while current_date <= end_date:
             daily_hours = 0
             found_entry = False
-            for ts in user_time_stamps:
+            # for ts in user_time_stamps:
+            for ts in user.timestamps :
                 if ts.punch_in_timestamp.date() == current_date.date():
                     if ts.reporting_type == "work":
                         if not found_entry:
@@ -355,6 +361,11 @@ def generate_company_summary_data(time_stamps, start_date, end_date):
             "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),
             "totalPaymentRequired": round(total_payment_required, 2),
         })
+        # time_stamps_by_user.setdefault(user.email, [user,])
+        
+    # for ts in time_stamps:
+    #      time_stamps_by_user.setdefault(ts.user_email, []).append(ts)  # Use setdefault
+
 
     return report
 
