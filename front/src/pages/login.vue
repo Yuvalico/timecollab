@@ -5,8 +5,6 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { endpoints } from '@/utils/backendEndpoints';
 
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue';
-
 import logo from '@images/logo.svg?raw';
 import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png';
 import authV1MaskLight from '@images/pages/auth-v1-mask-light.png';
@@ -77,7 +75,7 @@ const handleLogin = async () => {
   console.log(/*authStore.user.id, */authStore.user.f_name, authStore.user.l_name)
 
     // Redirect to a protected route, e.g., dashboard
-    router.push('/dashboard');
+    router.push('/timewatch');
   } catch (error) {
     console.error('Login failed:', error);
     // Optionally, show an error message to the user
@@ -150,12 +148,6 @@ const handleLogin = async () => {
                   label="Remember me"
                 />
 
-                <a
-                  class="text-primary"
-                  href="javascript:void(0)"
-                >
-                  Forgot Password?
-                </a>
               </div>
 
               <!-- login button -->

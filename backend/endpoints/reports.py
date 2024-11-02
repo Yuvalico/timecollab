@@ -63,7 +63,9 @@ def generate_user_report():
             try:
                 start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00') if start_date_str.endswith('Z') else start_date_str)
                 end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00') if end_date_str.endswith('Z') else end_date_str)
-
+                if end_date < start_date:
+                    return jsonify({'error': 'Start date must earlier than end date'}), 400
+                
             except ValueError:
                 return jsonify({'error': 'Invalid date format'}), 400
         else:
@@ -278,6 +280,7 @@ def generate_user_report_data(user_email, time_stamps, start_date, end_date):
         "daysNotReported": days_not_reported,  # Add daysNotReported to the report
         "potentialWorkDays": potential_work_days, 
         "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),
+        "workCapacityforRange":format_hours_to_hhmm(calculate_work_capacity(user, start_date, end_date) * 3600),
         "totalPaymentRequired": round(total_payment_required, 2),
         "dailyBreakdown": daily_breakdown,
         "userDetails": {  # Add user details section
@@ -285,7 +288,7 @@ def generate_user_report_data(user_email, time_stamps, start_date, end_date):
             "role": user.role,
             "phone": user.mobile_phone,
             "salary": salary,  # Use the float value directly
-            "workCapacity": float(user.work_capacity or 0),  # Handle potential None, convert to float
+            "workCapacity": format_hours_to_hhmm(float(user.work_capacity or 0) * 3600),  # Handle potential None, convert to float
             "weekendChoice": user.weekend_choice
         }
     }
@@ -311,9 +314,10 @@ def generate_company_summary_data(company_id, time_stamps, start_date, end_date)
         unpaid_days_off = 0
         days_not_reported = 0
         total_hours_worked =0
-
+        potential_work_days = 0
         current_date = start_date
         while current_date <= end_date:
+            isWeekend = False
             daily_hours = 0
             found_entry = False
             # for ts in user_time_stamps:
@@ -336,8 +340,14 @@ def generate_company_summary_data(company_id, time_stamps, start_date, end_date)
                         found_entry = True
                         daily_hours = 0
                         break
-            if not found_entry and (not user.weekend_choice or current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(','))):  # potential_work_days += 1
+            if user.weekend_choice and current_date.strftime('%A').lower() in map(str.lower, user.weekend_choice.split(',')):
+                isWeekend = True
+                
+            if not found_entry and not isWeekend: 
                 days_not_reported += 1
+            
+            if not isWeekend:
+                potential_work_days += 1
                 
             total_hours_worked += daily_hours
             current_date += timedelta(days=1)
@@ -352,22 +362,21 @@ def generate_company_summary_data(company_id, time_stamps, start_date, end_date)
                 "role": user.role,
                 "phone": user.mobile_phone,
                 "salary": salary,
-                "workCapacity": calculate_work_capacity(user, start_date, end_date)
+                "workCapacity": format_hours_to_hhmm((user.work_capacity or 0) * 3600)
             },
             "daysWorked": days_worked,
             "paidDaysOff": paid_days_off,
             "unpaidDaysOff": unpaid_days_off,
             "daysNotReported": days_not_reported,
+            "potentialWorkDays": potential_work_days, 
+            "workCapacityforRange": format_hours_to_hhmm(calculate_work_capacity(user, start_date, end_date) * 3600),
             "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),
             "totalPaymentRequired": round(total_payment_required, 2),
         })
-        # time_stamps_by_user.setdefault(user.email, [user,])
-        
-    # for ts in time_stamps:
-    #      time_stamps_by_user.setdefault(ts.user_email, []).append(ts)  # Use setdefault
-
 
     return report
+
+
 
 def generate_company_overview_data(company, time_stamps):
     employees = User.query.filter_by(company_id=company.company_id, is_active=True).all()

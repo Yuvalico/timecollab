@@ -93,11 +93,27 @@
         </div>
   
         <div v-if="dateRangeType === 'custom'" class="date-pickers">
-          <VDatePicker class="my-datepicker" v-model="startDate" label="Start Date" density="compact"></VDatePicker>
-          <VDatePicker class="my-datepicker" v-model="endDate" label="End Date" density="compact"></VDatePicker>
+          <VDatePicker 
+            class="my-datepicker" 
+            v-model="startDate" 
+            title="Start Date" 
+            label="Start Date" 
+            density="compact">
+          </VDatePicker>
+          <VDatePicker 
+            class="my-datepicker" 
+            v-model="endDate" 
+            title="End Date" 
+            label="End Date" 
+            density="compact">
+          </VDatePicker>
         </div>
   
-        <VBtn @click="generateReport" color="primary">Generate Report</VBtn>
+        <VBtn @click="generateReport" color="primary" :disabled="!areReportFieldsFilled">Generate Report</VBtn>
+        
+      </div>
+      <div v-if="serverErrorMessage" class="server-error"> 
+        {{ serverErrorMessage }}
       </div>
   
       <div v-if="reportData && reportType === 'user'" class="report-section">
@@ -114,11 +130,11 @@
                     <strong>Company: </strong> 
                     <a href="#" @click.prevent="generateCompanyReport(getCompanyName(selectedCompany))">{{ getCompanyName(selectedCompany) }}</a>
                   </p> 
-                  <p v-else><strong>Company: </strong> {{ getCompanyName(selectedCompany) }}</p> 
+                  <p v-else><strong>Company: </strong> {{ authStore.user.company_name }}</p> 
                 </VCol>
                 <VCol cols="3"> 
-                  <p><strong>Salary:</strong> ${{ reportData.userDetails.salary }}</p>
-                  <p><strong>Work Capacity:</strong> {{ reportData.userDetails.workCapacity }}</p>
+                  <p><strong>Hourly Salary:</strong> ${{ reportData.userDetails.salary }}</p>
+                  <p><strong>Daily Work Capacity:</strong> {{ reportData.userDetails.workCapacity }}</p>
                   
                 </VCol>
               </VRow>
@@ -134,6 +150,7 @@
                   <p><strong>Days Not Reported:</strong> {{ reportData.daysNotReported }}</p>
                 </VCol>
                 <VCol cols="3"> 
+                  <p><strong>Total Hours Potential: </strong>{{ reportData.workCapacityforRange }}</p>
                   <p><strong>Total Hours Worked: </strong>{{ reportData.totalHoursWorked }}</p>
                   <p><strong>Total Payment Required: </strong> ${{ parseFloat(reportData.totalPaymentRequired).toFixed(2) }}</p> 
                   
@@ -185,7 +202,7 @@
           <template v-slot:item.role="{ item }">
           {{ item.userDetails.role }}
           </template>
-          <template v-slot:item.workCapacity="{ item }">
+          <template v-slot:item.dailyWorkCapacity="{ item }">
           {{ item.userDetails.workCapacity }}
           </template>
           <template v-slot:item.salary="{ item }">
@@ -243,6 +260,7 @@
   const adminNames = ref([]);
   const reportData = ref(null);
   const companyList = ref([]); 
+  const serverErrorMessage = ref(null); 
   const userList = ref([]);
   const dateRangeOptions = ref([
       { value: 'monthly', title: 'Monthly' },
@@ -296,13 +314,15 @@ const availableMonths = ref([
   const reportHeaders = ref([
   { text: 'Name', value: 'employeeName' },
   { text: 'Role', value: 'role' },
-  { text: 'Hourly Salary', value: 'salary' },
-  { text: 'Hours Worked', value: 'totalHoursWorked' },
-  { text: 'Work Capacity', value: 'workCapacity' },
+  { text: 'Daily Capacity', value: 'dailyWorkCapacity' },
   { text: 'Days Worked', value: 'daysWorked' },
   { text: 'Paid Days Off', value: 'paidDaysOff' }, 
   { text: 'Unpaid Days Off', value: 'unpaidDaysOff' }, 
-  { text: 'Days Not Reported', value: 'daysNotReported' }, 
+  { text: 'Days Not Reported', value: 'daysNotReported' },
+  { text: 'Total Days Potential', value: 'potentialWorkDays' },
+  { text: 'Total Hours Potential', value: 'workCapacityforRange' },
+  { text: 'Hours Worked', value: 'totalHoursWorked' },
+  { text: 'Hourly Salary', value: 'salary' },
   { text: 'Total Salary', value: 'totalPaymentRequired' },
 ]);
   
@@ -373,12 +393,6 @@ const totalSalaryOverview = computed(() => {
     return reportData.value.datesWorked.map(date => formatDate(date)).join(', ');
   });
   
-  const formattedDatesMissed = computed(() => {
-     if (!reportData.value || !reportData.value.datesMissed) return ''
-    return reportData.value.datesMissed.map(date => formatDate(date)).join(', ');
-  });
-  
-
   function isWeekend(dayName){
   if(!reportData.value.userDetails.weekendChoice)
     return false;
@@ -443,7 +457,8 @@ const totalSalaryOverview = computed(() => {
   }
 }
 
-  async function generateReport() {
+async function generateReport() {
+  serverErrorMessage.value = null;
     try {
       const params = {
         company_id: selectedCompany.value,
@@ -479,6 +494,8 @@ const totalSalaryOverview = computed(() => {
   
     } catch (error) {
       console.error('Error generating report:', error);
+      serverErrorMessage.value = error.response.data.error ||'Network error or server unavailable'
+      reportData.value = null;
       // Handle error, e.g., show an error message to the user
     }
   }
@@ -495,13 +512,29 @@ const totalSalaryOverview = computed(() => {
     }
     if (authStore.isNetAdmin){
       fetchCompanies();
-    } else if (authStore.isEmployer) {
+    } 
+    if (authStore.isEmployer || authStore.isNetAdmin) {
       selectedCompany.value = authStore.user.company_id;
       fetchUsers(); // Call fetchUsers here to populate the user list
     }
     generateReport()
   });
   
+  const areReportFieldsFilled = computed(() => {
+    if (reportType.value === 'user') {
+      if (authStore.isEmployee){
+        return dateRangeType.value ? true : false;
+      }else{
+        return selectedCompany.value && selectedUser.value && dateRangeType.value;
+      }
+    } else if (reportType.value === 'company') {
+      return selectedCompany.value && dateRangeType.value;
+    } else if (reportType.value === 'overview') {
+      return dateRangeType.value;
+    }
+    return false;
+  });
+
   watch(selectedCompany, (newCompany) => {
     if (newCompany) {
       fetchUsers();
@@ -531,15 +564,23 @@ const totalSalaryOverview = computed(() => {
   <style scoped>
   .filters {
     display: flex;
-    flex-wrap: nowrap; /* Prevent wrapping to keep everything in one line */
+    justify-content: center; 
+    align-items: center; 
+    flex-wrap: wrap;
     gap: 15px;
     margin-top: 20px;
-    margin-bottom: 20px;
-    align-items: center; /* Vertically align items in the center */
+    margin-bottom: 20px; 
   }
   
-  .filters > * {
-    flex: 0 0 auto; /* Prevent items from growing to fill the space */
+  /*.filters > * {
+    flex: 0 0 auto; /* Prevent items from growing to fill the space 
+  }*/
+  .report-type-select-container,
+  .company-select-container,
+  .user-select-container,
+  .date-range-select-container {
+    min-width: 150px; /* Set a minimum width for the containers */
+    flex: 1 1 auto;   /* Allow the containers to grow and shrink */
   }
   
   .report-section {
@@ -599,10 +640,6 @@ const totalSalaryOverview = computed(() => {
     gap: 15px;
   }
   
-.date-pickers {  /* New style for the date pickers */
-    display: flex;
-    gap: 15px;
-  }
 
 .date-range { /* Style for the date range span */
     font-size: 0.8em; /* Slightly smaller font size */
@@ -644,6 +681,13 @@ const totalSalaryOverview = computed(() => {
   
   .v-table >>> tbody tr.weekend { /* Target rows with the class 'weekend' */
     background-color: #d3d3d3; /* Set the background color for weekend rows */
+  }
+
+  .server-error { /* Style for the server error message */
+    color: red;
+    margin-top: 10px;
+    text-align: center;
+    width: 100%;
   }
 
 </style>

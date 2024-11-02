@@ -2,6 +2,7 @@ import traceback
 from tabulate import tabulate
 import datetime
 import re
+from datetime import datetime, timezone, timedelta
 import psycopg2
 from flask_jwt_extended import get_jwt_identity, get_jwt
 from sqlalchemy import create_engine, text  
@@ -21,7 +22,7 @@ def print_exception(exception):
     tb = traceback.extract_tb(exception.__traceback__)[-1]
     exception_type = type(exception).__name__
     exception_message = str(exception)
-    timestamp = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     path_idx = find_timewatch_re(tb.filename)
     if -1 != path_idx:
         tb.filename = tb.filename[path_idx:]
@@ -161,14 +162,19 @@ def create_db(app, db):
         engine.dispose()
         
 def calculate_work_capacity(user, start_date, end_date):
-    # Calculate the number of weeks in the date range
-    num_weeks = (end_date - start_date).days / 7
+    # Calculate the number of potential work days in the date range (excluding weekends)
+    num_work_days = 0
+    current_date = start_date
+    while current_date <= end_date:
+        if not user.weekend_choice or current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(',')):
+            num_work_days += 1
+        current_date += timedelta(days=1)
 
-    # Calculate work capacity for the date range
-    work_capacity_per_week = float(user.work_capacity or 0)
-    work_capacity_for_range = work_capacity_per_week * num_weeks
+    # Calculate total work capacity for the date range
+    daily_work_capacity = float(user.work_capacity or 0)
+    total_work_capacity = daily_work_capacity * num_work_days
 
-    return round(work_capacity_for_range, 2)  # Round to 2 decimal places
+    return round(total_work_capacity, 2)
 
 def format_hours_to_hhmm(seconds):
   """

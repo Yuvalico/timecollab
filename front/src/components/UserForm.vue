@@ -329,7 +329,7 @@ defineExpose({
               <VTextField
                 v-model="workCapacity"
                 prepend-inner-icon="ri-time-line"
-                label="Weekly Work Capacity"
+                label="Daily Work Capacity"
                 type="number"
                 placeholder="160"
                 :rules="[requiredRule]"

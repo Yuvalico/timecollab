@@ -31,10 +31,14 @@ def create_user():
         employment_start_str = data.get('employment_start')
         employment_end_str = data.get('employment_end')
         weekend_choice = data.get('weekend_choice')
+        
+        if not first_name or not last_name or not email or not password or not company_name or not company_name\
+            or not role or not permission or not salary or not work_capacity or not employment_start_str:
+                return jsonify({'error': 'Missing mandatory user field'}), 400
 
         permission_int = E_PERMISSIONS.to_enum(permission)
         if permission_int is None:
-            return jsonify({'error': 'Invalid permission type'}), 400
+            return jsonify({'error': 'Invalid permission type'}), 403
 
         # Check if user already exists using SQLAlchemy
         existing_user = User.query.filter_by(email=email).first()
@@ -285,4 +289,26 @@ def user_by_email(email):
     except Exception as e:
         print_exception(e)
         return jsonify({'error': str(e)}), 500
+    
+@users_blueprint.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        data = request.get_json()
+        new_password = data.get('new_password')
+
+        user = User.query.get(current_user_email)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Hash the new password
+        user.pass_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        db.session.commit()
+
+        return jsonify({'message': 'Password changed successfully'}), 200
+
+    except Exception as e:
+        print_exception(e)
+        return jsonify({'error': 'Failed to change password'}), 500
     

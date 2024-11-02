@@ -166,8 +166,8 @@ const totalTimeWorkedThisMonth = computed(() => {
 });
 
 function formatTimeFromSeconds(totalSeconds) {
-  const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-  const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+  const hours = Math.round(totalSeconds / 3600).toString().padStart(2, '0');
+  const minutes = Math.round((totalSeconds % 3600) / 60).toString().padStart(2, '0');
   // const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
   return `${hours}:${minutes}`;
 }
@@ -686,7 +686,7 @@ th, td {
           </div>
           <div class="info-item">
             <span class="label">Work Capacity:</span>
-            <span class="value">{{ selectedUserData.work_capacity }} Hours</span>
+            <span class="value">{{ formatTimeFromSeconds(selectedUserData.work_capacity * 3600) }} Hours</span>
           </div>
          
         </VCol>

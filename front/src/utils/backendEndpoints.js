@@ -15,22 +15,24 @@ export const endpoints = {
     timestamp_endpoint: TIMESTAMP_ENDPOINT,
     reports_endpoint: REPORT_ENDPOINT,
     users: {
-        create:     `${USERS_ENDPOINT}/create-user`,
-        update:     `${USERS_ENDPOINT}/update-user`,
-        remove:     `${USERS_ENDPOINT}/remove-user`,
-        getActive:  `${USERS_ENDPOINT}/active`,
-        getAll:     `${USERS_ENDPOINT}/`,
-        getByEmail: `${USERS_ENDPOINT}/user-by-email`,
+        create:             `${USERS_ENDPOINT}/create-user`,
+        update:             `${USERS_ENDPOINT}/update-user`,
+        remove:             `${USERS_ENDPOINT}/remove-user`,
+        getActive:          `${USERS_ENDPOINT}/active`,
+        getAll:             `${USERS_ENDPOINT}/`,
+        getByEmail:         `${USERS_ENDPOINT}/user-by-email`,
+        changePassword:    `${USERS_ENDPOINT}/change-password`,
     },
     companies: {
-        create:             `${COMPANIES_ENDPOINT}/create-company`,
-        update:             `${COMPANIES_ENDPOINT}/update-company`,
-        remove:             `${COMPANIES_ENDPOINT}/remove-company`,
-        getActive:          `${COMPANIES_ENDPOINT}/active`,
-        getAll:             `${COMPANIES_ENDPOINT}/`,
-        getCompanyUsers:    `${COMPANIES_ENDPOINT}`,   //finish with /users
-        getCompanyDetails:  `${COMPANIES_ENDPOINT}`,
-        getCompanyAdmins:  `${COMPANIES_ENDPOINT}`,    // finish with /admins
+        create:                 `${COMPANIES_ENDPOINT}/create-company`,
+        update:                 `${COMPANIES_ENDPOINT}/update-company`,
+        remove:                 `${COMPANIES_ENDPOINT}/remove-company`,
+        getActive:              `${COMPANIES_ENDPOINT}/active`,
+        getAll:                 `${COMPANIES_ENDPOINT}/`,
+        getCompanyUsers:        `${COMPANIES_ENDPOINT}`,   //finish with /users
+        getCompanyDetails:      `${COMPANIES_ENDPOINT}`,
+        getCompanyAdmins:       `${COMPANIES_ENDPOINT}`,    // finish with /admins
+        getCompanyNamebyID:     `${COMPANIES_ENDPOINT}`,    // finish with /name
     },
     auth: {
         login:  `${AUTH_ENDPOINT}/login`,

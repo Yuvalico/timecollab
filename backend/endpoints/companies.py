@@ -167,7 +167,7 @@ def get_company_users(company_id):
             return jsonify({'error': 'Company not found'}), 404
 
         # Get all users associated with the company
-        users = User.query.filter_by(company_id=company_id).all()
+        users = User.query.filter_by(company_id=company_id, is_active=True).all()
 
         # Convert the users to dictionaries and include them in the response
         user_data = [user.to_dict() for user in users]
@@ -227,11 +227,38 @@ def get_company_admins(company_id):
             return jsonify({'error': 'Unauthorized to access this information'}), 403
 
         # Get all admins associated with the company
-        admins = User.query.filter_by(company_id=company_id, permission=E_PERMISSIONS.employer).all()
+        admins = User.query.filter_by(company_id=company_id, permission=E_PERMISSIONS.employer, is_active=True).all()
 
         # Convert the admins to dictionaries and include them in the response
         admin_data = [admin.to_dict() for admin in admins]
         return jsonify(admin_data), 200
+
+    except Exception as e:
+        # Handle any unexpected errors
+        return jsonify({'error': str(e)}), 500
+    
+    
+@companies_blueprint.route('/<string:company_id>/name', methods=['GET'])
+@jwt_required()
+def get_company_name_by_id(company_id):
+    try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        # Query the company by its ID
+        company = Company.query.get(company_id)
+
+        # Check if the company exists
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        if user_permission == E_PERMISSIONS.employee and user_company_id != company_id:
+            return jsonify({'error': 'Unauthorized to access this information'}), 403
+
+        if user_permission == E_PERMISSIONS.employer and user_company_id != company_id:
+            return jsonify({'error': 'Unauthorized to access this information'}), 403
+
+        # Return the company name
+        return jsonify({'company_name': company.company_name}), 200
 
     except Exception as e:
         # Handle any unexpected errors

@@ -15,9 +15,9 @@ const authStore = useAuthStore();
 console.log(authStore);
 
 
-// if (!authStore.isNetAdmin) {
-//   router.push('/dashboard'); // Redirect non-admin users to the dashboard
-// }
+if (authStore.isEmployee) {
+  router.push('/timewatch'); // Redirect non-admin users to the dashboard
+}
 
 // Refs to store users and companies
 const users = ref([]);
@@ -149,21 +149,6 @@ function editUser(user) {
 
 const userFormRef = ref(null); // Ref for the UserForm component
 
-// const removeUser = async (user) => {
-//   try {
-//     const response = await api.put(`${endpoints.users.remove}/${user.email}`);
-
-//     if (response.status === 200) {
-//       console.log('User removed successfully');
-//       // Refresh the users list after removal
-//       fetchUsers();
-//     } else {
-//       console.error('Failed to remove user');
-//     }
-//   } catch (error) {
-//     console.error('Error removing user:', error);
-//   }
-// };
 const removeUser = (user) => {
   userToRemove.value = user;
   showRemoveUserDialog.value = true;
