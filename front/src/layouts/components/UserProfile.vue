@@ -7,10 +7,10 @@ const authStore = useAuthStore();
 
 const logout = () => {
   // Clear the JWT token from localStorage
-  localStorage.removeItem('authToken');
+  router.push('/login');
+  authStore.logout(); 
 
   // Redirect the user to the login page
-  router.push('/login');
 };
 </script>
 

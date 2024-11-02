@@ -21,7 +21,7 @@ export const endpoints = {
         getActive:          `${USERS_ENDPOINT}/active`,
         getAll:             `${USERS_ENDPOINT}/`,
         getByEmail:         `${USERS_ENDPOINT}/user-by-email`,
-        changePassword:    `${USERS_ENDPOINT}/change-password`,
+        changePassword:     `${USERS_ENDPOINT}/change-password`,
     },
     companies: {
         create:                 `${COMPANIES_ENDPOINT}/create-company`,

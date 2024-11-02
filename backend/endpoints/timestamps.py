@@ -21,10 +21,17 @@ def create_timestamp():
         detail = data.get('detail')
         punch_in = data.get("punch_in_timestamp")
         punch_out = data.get("punch_out_timestamp")
+        
+        if user_permission == E_PERMISSIONS.employee and current_user_email != user_email:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
 
         user: User = User.query.filter_by(email=user_email).first()
         if not user:
             return jsonify({'error': f'User not found for email: {user_email}'}), 404
+        
+        if user_permission == E_PERMISSIONS.employer and user_company_id != user.company_id:
+             return jsonify({'error': 'Unauthorized access'}), 403
 
         if not punch_in and not punch_out:
             punch_in_timestamp = datetime.now(timezone.utc)
@@ -49,6 +56,9 @@ def create_timestamp():
             )
 
         elif punch_in and punch_out:
+            if punch_in < punch_out:
+                return jsonify({'error': f'Start time should be earlier than end time'}), 404
+            
             new_timestamp = TimeStamp(
                 user_email=user.email,
                 entered_by=entered_by_user,
@@ -80,7 +90,9 @@ def create_timestamp():
 def get_timestamps():
     try:
         current_user_email, user_permission, user_company_id = extract_jwt()
-
+        if user_permission != E_PERMISSIONS.net_admin:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
         timestamps = TimeStamp.query.all()
         timestamps_list = [timestamp.to_dict() for timestamp in timestamps]
         return jsonify(timestamps_list), 200
@@ -101,6 +113,9 @@ def punch_out():
         reporting_type = data.get('reporting_type')
         detail = data.get('detail')
 
+        if user_permission == E_PERMISSIONS.employee and current_user_email != user_email:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
         user: User = User.query.filter_by(email=user_email).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_email}'}), 404
@@ -108,6 +123,9 @@ def punch_out():
         entered_by_user = User.query.filter_by(email=entered_by).first()
         if not entered_by_user:
             return jsonify({'error': f'Entered by user not found for email: {entered_by}'}), 404
+        
+        if user_permission == E_PERMISSIONS.employer and user_company_id != user.company_id:
+             return jsonify({'error': 'Unauthorized access'}), 403
 
         today = datetime.now(timezone.utc).date()
         start_of_day = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -143,6 +161,7 @@ def edit(timestamp_uuid):
     try:
         current_user_email, user_permission, user_company_id = extract_jwt()
 
+        
         timestamp: TimeStamp = TimeStamp.query.filter_by(uuid=timestamp_uuid).first()
         if not timestamp:
             return jsonify({'error': 'Timestamp not found'}), 404
@@ -207,9 +226,15 @@ def check_punch_in_status():
         data = request.get_json()
         user_email = data.get('user_email')
 
+        if user_permission == E_PERMISSIONS.employee and current_user_email != user_email:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
         user: User = User.query.filter_by(email=user_email).first()
         if not user:
             return jsonify({'error': f'User not found for email: {user_email}'}), 404
+        
+        if user_permission == E_PERMISSIONS.employer and user_company_id != user.company_id:
+             return jsonify({'error': 'Unauthorized access'}), 403
 
         today = datetime.now(timezone.utc).date()
         start_of_day = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -241,6 +266,12 @@ def delete_timestamp(uuid):
         if not timestamp:
             return jsonify({'error': 'Timestamp not found'}), 404
 
+        if user_permission == E_PERMISSIONS.employee and current_user_email != timestamp.user.email:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
+        if user_permission == E_PERMISSIONS.employer and user_company_id != timestamp.user.company_id:
+             return jsonify({'error': 'Unauthorized access'}), 403
+         
         db.session.delete(timestamp)
         db.session.commit()
 

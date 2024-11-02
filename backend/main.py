@@ -31,7 +31,7 @@ app.config.from_object(Config)
 CORS(app, resources={r"/*": {"origins": f"http://{Config.WEB_URL}:{Config.WEB_PORT}", "supports_credentials": True}})
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}/{Config.DB_NAME}'  # Replace with your actual database URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Optional, but recommended
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # 1-hour access token expiration
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)  # 10-minute access token expiration
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30) # 30-day refresh token expiration
 
 db.init_app(app)

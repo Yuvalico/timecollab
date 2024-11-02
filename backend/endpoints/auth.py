@@ -13,7 +13,7 @@ def login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
-
+    remember = data.get('remember')
     try:
         # Query the user using SQLAlchemy
         user: User = User.query.filter_by(email=email).first()

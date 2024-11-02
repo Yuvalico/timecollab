@@ -1,9 +1,11 @@
-import { createApp } from 'vue';
+import { createApp, ref } from 'vue';
 import App from '@/App.vue';
 import { registerPlugins } from '@core/utils/plugins';
 import axios from 'axios'; 
 import { useAuthStore } from '@/store/auth'; 
 import { endpoints } from '@/utils/backendEndpoints';
+// import router from '@/plugins/router/index.js';
+
 
 // Styles
 import '@core/scss/template/index.scss';
@@ -35,6 +37,15 @@ api.interceptors.request.use(
   }
 );
 
+function clearAuthStoreOnUnload() {
+  const authStore = useAuthStore();
+  if (!authStore.remember) { // Only clear if "Remember me" is not checked
+    authStore.logout();
+  }
+}
+
+window.addEventListener('beforeunload', clearAuthStoreOnUnload);
+
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -42,18 +53,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     // Check for 401 and the specific error message
+    const authStore = useAuthStore();
     if (
       error.response.status === 401 && 
       error.response.data.msg === "Token has expired" &&
       !originalRequest._retry && error.config.url != endpoints.auth.refresh
     ) {
       originalRequest._retry = true;
-      const authStore = useAuthStore();
       const refreshToken = authStore.refreshToken;
       try {
         // Include the refresh token in the Authorization header
-        console.log(`token ${authStore.accessToken}`)
-        console.log(`refresh : ${refreshToken} ---`)
         const refreshResponse = await api.post(endpoints.auth.refresh);
 
         const newAccessToken = refreshResponse.data.access_token;
@@ -66,15 +75,18 @@ api.interceptors.response.use(
         // originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        console.error("Failed to refresh token:", refreshError);
-        return Promise.reject(refreshError);
-      }
+          console.error("Failed to refresh token:", refreshError);
+          authStore.logout(); 
+          return Promise.reject(refreshError);
+        }
+    }else if(error.response.status === 401 && 
+      error.response.data.msg === "Fresh token required"){
+        const authStore = useAuthStore();
+        authStore.logout();
     }
-    return Promise.reject(error);   
-
+    return Promise.reject(error); 
   }
 );
-
 
 // Create vue app
 const app = createApp(App);

@@ -6,10 +6,6 @@ import { useAuthStore } from '@/store/auth';
 import { endpoints } from '@/utils/backendEndpoints';
 
 import logo from '@images/logo.svg?raw';
-import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png';
-import authV1MaskLight from '@images/pages/auth-v1-mask-light.png';
-import authV1Tree2 from '@images/pages/auth-v1-tree-2.png';
-import authV1Tree from '@images/pages/auth-v1-tree.png';
 
 // Inject the Axios instance
 const api = inject('api');
@@ -25,12 +21,6 @@ const form = ref({
 
 const vuetifyTheme = useTheme();
 
-const authThemeMask = computed(() => {
-  return vuetifyTheme.global.name.value === 'light'
-    ? authV1MaskLight
-    : authV1MaskDark;
-});
-
 const isPasswordVisible = ref(false);
 
 // New function to handle login
@@ -39,6 +29,7 @@ const handleLogin = async () => {
     const response = await api.post(endpoints.auth.login, {
       email: form.value.email,
       password: form.value.password,
+      remember: form.value.remember,
     }, {
       withCredentials: true
     });
@@ -50,6 +41,7 @@ const handleLogin = async () => {
                       }, 
                       access_token,
                       refresh_token,
+                      form.value.remember,
                     );
 
     //Get user data
@@ -62,17 +54,18 @@ const handleLogin = async () => {
 
     authStore.setUser({ email: form.value.email, 
       // id: user_data.id,
-      f_name: user_data.first_name, 
-      l_name: user_data.last_name, 
-      company_id: company_data.company_id,
-      company_name: company_data.company_name,
-      permission: permission 
-    }, 
-    access_token,
-    refresh_token
-  );
+        f_name: user_data.first_name, 
+        l_name: user_data.last_name, 
+        company_id: company_data.company_id,
+        company_name: company_data.company_name,
+        permission: permission 
+      }, 
+      access_token,
+      refresh_token,
+      form.value.remember,
+    );
     
-  console.log(/*authStore.user.id, */authStore.user.f_name, authStore.user.l_name)
+    console.log(/*authStore.user.id, */authStore.user.f_name, authStore.user.l_name)
 
     // Redirect to a protected route, e.g., dashboard
     router.push('/timewatch');
@@ -102,7 +95,7 @@ const handleLogin = async () => {
             v-html="logo"
           />
           <h2 class="font-weight-medium text-2xl text-uppercase">
-            Materio
+            TimeTracker
           </h2>
         </RouterLink>
       </VCardItem>
@@ -164,23 +157,6 @@ const handleLogin = async () => {
       </VCardText>
     </VCard>
 
-    <VImg
-      class="auth-footer-start-tree d-none d-md-block"
-      :src="authV1Tree"
-      :width="250"
-    />
-
-    <VImg
-      :src="authV1Tree2"
-      class="auth-footer-end-tree d-none d-md-block"
-      :width="350"
-    />
-
-    <!-- bg img -->
-    <VImg
-      class="auth-footer-mask d-none d-md-block"
-      :src="authThemeMask"
-    />
   </div>
 </template>
 

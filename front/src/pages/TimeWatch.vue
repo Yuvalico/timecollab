@@ -441,7 +441,7 @@ watch(selectedUser, (newUser) => {
 }
 
 .user-info {
-  background-color: #f5f5f5; /* Light background color */
+  background-color: "inherit"; /* Light background color */
   border: 1px solid #ccc;  /* Subtle border */
   padding: 20px;           /* Increased padding */
   border-radius: 8px;      /* More rounded corners */

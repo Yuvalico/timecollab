@@ -3,22 +3,25 @@ import { defineStore } from 'pinia';
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    accessToken: null,  // No need to initialize from localStorage
+    accessToken: null,  
     refreshToken: null,
-    userPermission: 2, // Default to non-admin
+    userPermission: 2, 
+    remember: false,
   }),
   actions: {
-    setUser(user, access_token, refresh_token) {  // No explicit types in JavaScript
+    setUser(user, access_token, refresh_token, remember) {  
       this.user = user;
       this.accessToken = access_token;
       this.refreshToken = refresh_token;
       this.userPermission = user.permission;
+      this.remember = remember;
     },
     logout() {
-      this.user = null;
+      // this.user = null;
       this.accessToken = null;
       this.refreshToken = null;
-      this.userPermission = 2; // Reset to default non-admin
+      this.userPermission = 2; 
+      this.remember = false;
     },
   },
   getters: {
