@@ -39,7 +39,7 @@ def create_user():
         # Check if user already exists using SQLAlchemy
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            return jsonify({'error': 'User already exists'}), 400
+            return jsonify({'error': 'User email already exists'}), 400
 
         # Get the company_id using SQLAlchemy
         company: Company = Company.query.filter_by(company_name=company_name).first()
@@ -158,8 +158,9 @@ def remove_user(user_email):
         if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
             return jsonify({'error': 'Unauthorized access'}), 403 
     
-        # data = request.get_json()
-        # user_email = data.get('email')  # Get user_email from the request body
+        data = request.get_json()
+        employment_end_str = data.get('employment_end')  # Get employment_end from request
+
 
         # Soft delete user using SQLAlchemy
         user = User.query.get(user_email)
@@ -167,6 +168,7 @@ def remove_user(user_email):
             return jsonify({'error': 'User not found'}), 404
 
         user.is_active = False
+        user.employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00'))  # Set employment_end
         db.session.commit()
 
         return jsonify({'message': 'User removed successfully', 'user': user.to_dict()}), 200

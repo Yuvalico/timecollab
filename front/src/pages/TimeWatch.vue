@@ -345,8 +345,7 @@ const hasCurrentDayOff = computed(() => {
   return isDayOff(day, dayName);
 });
 
-function isDayOff(day, dayName){
-  
+function isDayOff(day, dayName){  
   if (!selectedUserData.value.weekend_choice)
     return false;
   
@@ -621,7 +620,7 @@ th, td {
         />
       </div>
     </div>
-    <div v-if="hasCurrentDayOff" class="day-off-message">
+    <div v-if="hasCurrentDayOff && selectedUser === authStore.user.email" class="day-off-message">
       Day Off - Cannot Punch In/Out
     </div>
     <div v-if="message">
@@ -711,7 +710,7 @@ th, td {
       ></VSelect>
     </div>
 
-    <SimpleTable :headers="calendarHeaders" :items="calendarData" >
+    <SimpleTable :headers="calendarHeaders" :items="calendarData">
       <template v-for="dayName in weekDays" :key="dayName" v-slot:[`item.${dayName}`]="{ item }">
         <div class="calendar-cell"
         :style="{ backgroundColor: isWeekend(dayName) && item[dayName]?.day ? '#d3d3d3 ' : 'inherit' }"> 

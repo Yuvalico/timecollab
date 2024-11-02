@@ -234,7 +234,7 @@ def generate_user_report_data(user_email, time_stamps, start_date, end_date):
         found_entry = False
         work_type = None
         daily_hours = 0
-        if current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(',')):  # potential_work_days += 1
+        if not user.weekend_choice or current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(',')):  # potential_work_days += 1
             potential_work_days += 1
             for ts in time_stamps:
                 if ts.punch_in_timestamp.date() == current_date.date():
@@ -336,7 +336,7 @@ def generate_company_summary_data(company_id, time_stamps, start_date, end_date)
                         found_entry = True
                         daily_hours = 0
                         break
-            if not found_entry:
+            if not found_entry and (not user.weekend_choice or current_date.strftime('%A').lower() not in map(str.lower, user.weekend_choice.split(','))):  # potential_work_days += 1
                 days_not_reported += 1
                 
             total_hours_worked += daily_hours

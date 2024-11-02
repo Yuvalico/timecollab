@@ -23,6 +23,10 @@ const employmentStart = ref(null);
 const employmentEnd = ref(null);
 const weekendChoice = ref(null);
 const selectedWeekDays = ref([]);
+const formValid = ref(false);
+const form = ref(null);
+const serverErrorMessage = ref(null); // To store server error messages
+
 const weekDays = ref([
   'Sunday', 
   'Monday', 
@@ -51,6 +55,26 @@ async function fetchCompanies() {
     console.error('Error fetching companies:', error);
   }
 }
+
+const validateForm = async () => {
+  if (form.value) {
+    const validationResult = await form.value.validate();
+    formValid.value = validationResult.valid;
+  } else {
+    formValid.value = false;
+  }
+};
+
+const isFormValid = computed(() => formValid.value);
+
+watch(formValid, (newVal) => {
+  console.log("Form validation state changed:", newVal);
+});
+
+watch(
+  () => [firstName.value, lastName.value, email.value, selectedCompany.value, password.value, role.value, permission.value, employmentStart.value, salary.value, workCapacity.value],
+  () => validateForm()
+);
 
 onMounted(fetchCompanies);
 
@@ -93,10 +117,15 @@ function resetForm() {
   employmentStart.value = null;
   employmentEnd.value = null;
   selectedWeekDays.value = [];
+  if (form.value) {
+    form.value.resetValidation();
+  }
+
 }
 
 // Submit handler
 const submitForm = async () => {
+  serverErrorMessage.value = null;
   try {
     const method = isEditing.value ? 'put' : 'post';
     const url = isEditing.value
@@ -158,9 +187,11 @@ const submitForm = async () => {
       console.error('Failed to submit form');
       const errorData = await response.data;
       console.error('Error details:', errorData);
+      serverErrorMessage.value = errorData.error || 'Unknown error';
     }
   } catch (error) {
     console.error('Error submitting form:', error);
+    serverErrorMessage.value = error.response.data.error ||'Network error or server unavailable';
   }
 };
 
@@ -183,7 +214,7 @@ defineExpose({
       </VCardTitle>
 
       <VCardText>
-        <VForm @submit.prevent="submitForm">
+        <VForm ref="form" @submit.prevent="submitForm">
           <VRow>
             <VCol cols="12">
               <VTextField
@@ -251,13 +282,14 @@ defineExpose({
               />
             </VCol>
             
-            <VRow>
-              <p style="margin-left: 30px; margin-top: 20px;"> <strong>Employment Start Date Selection </strong> </p> 
-              <VCol cols="12"> 
-                <VDatePicker v-model="employmentStart" label="Employment Start"></VDatePicker>
-              </VCol>
+            <VCol cols="12">
+                <VDatePicker 
+                v-model="employmentStart" 
+                title="employement start date" 
+                label="Employment Start" 
+                :rules="[requiredRule]"></VDatePicker>
+            </VCol>
   
-            </VRow>
             
 
             <VCol cols="12">
@@ -289,6 +321,7 @@ defineExpose({
                 label="Salary"
                 type="number"
                 placeholder="50000"
+                :rules="[requiredRule]"
               />
             </VCol>
 
@@ -296,9 +329,10 @@ defineExpose({
               <VTextField
                 v-model="workCapacity"
                 prepend-inner-icon="ri-time-line"
-                label="Work Capacity"
+                label="Weekly Work Capacity"
                 type="number"
                 placeholder="160"
+                :rules="[requiredRule]"
               />
             </VCol>
 
@@ -319,6 +353,9 @@ defineExpose({
                   </VCardText>
               </VCol>
               </VRow>
+              <div v-if="serverErrorMessage" class="server-error"> 
+                {{ serverErrorMessage }}
+              </div>
             <VCol cols="12" class="d-flex justify-end">
               <VBtn
                 color="secondary"
@@ -329,9 +366,10 @@ defineExpose({
               >
                 Cancel
               </VBtn>
-
+              
               <VBtn
                 type="submit"
+                :disabled="!isFormValid"
               >
                 {{ isEditing ? 'Update' : 'Submit' }}
               </VBtn>
@@ -354,5 +392,9 @@ defineExpose({
 
 .end-date-picker {
   padding-left: 16px; /* Add some padding to the left of the second date picker */
+}
+.server-error { /* Style for the server error message */
+  color: red;
+  margin-top: 10px;
 }
 </style>

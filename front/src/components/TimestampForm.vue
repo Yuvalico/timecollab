@@ -5,7 +5,7 @@
           <span class="headline">{{ isEditing ? 'Edit Timestamp' : 'Add New Timestamp' }}</span>
         </VCardTitle>
         <VCardText>
-          <VForm @submit.prevent="submitForm">
+          <VForm ref="form" @submit.prevent="submitForm">
             <VCol cols="12">
               <VSelect
                 v-model="reportingType"
@@ -18,7 +18,7 @@
               <VCol v-if="reportingType === 'work'" cols="12">
                 <VTextField
                   v-model="inTime"
-                  label="In Time"
+                  label="Start Time"
                   type="time"
                   :rules="[requiredRule]"
                 />
@@ -26,9 +26,9 @@
               <VCol v-if="reportingType === 'work'" cols="12">
                 <VTextField
                   v-model="outTime"
-                  label="Out Time"
+                  label="End Time"
                   type="time"
-                  :rules="[requiredRule]"
+                  :rules="[requiredRule, validateEndTime]"
                 />
               </VCol>
               <VCol cols="12"> 
@@ -48,7 +48,7 @@
                 >
                   Cancel
                 </VBtn>
-                <VBtn type="submit">
+                <VBtn type="submit" :disabled="!isFormValid">
                   {{ isEditing ? 'Update' : 'Submit' }}
                 </VBtn>
               </VCol>
@@ -74,6 +74,8 @@
   const IsoOutTime = ref(null);
   const description = ref(null);
   const reportingType = ref(null);
+  const form = ref(null); // Ref for the VForm
+  const formValid = ref(null); // Ref for the VForm
 const reportingTypeOptions = ref([
   { value: 'work', title: 'Work' },
   { value: 'unpaidoff', title: 'Unpaid Day Off' },
@@ -89,6 +91,26 @@ const reportingTypeOptions = ref([
 
   const requiredRule = (value) => !!value || 'Required';
   
+  const validateForm = async () => {
+  if (form.value) {
+    const validationResult = await form.value.validate();
+    formValid.value = validationResult.valid;
+  } else {
+    formValid.value = false;
+  }
+};
+
+const isFormValid = computed(() => formValid.value);
+
+watch(formValid, (newVal) => {
+  console.log("Form validation state changed:", newVal);
+});
+
+watch(
+  () => [reportingType.value, inTime.value, outTime.value],
+  () => validateForm()
+);
+
   function formatTime(dateObj) {
     if (!(dateObj instanceof Date)) {
         dateObj = new Date(dateObj); 
@@ -131,7 +153,7 @@ const reportingTypeOptions = ref([
         console.log(day, month, year);
         IsoInTime.value = new Date(year, month, day,1,1,1);
         IsoOutTime.value = new Date(year, month, day,1,1,1);
-        reportingType.value = null;
+        reportingType.value = 'work';
 
         resetForm();
     }
@@ -142,6 +164,9 @@ const reportingTypeOptions = ref([
     inTime.value = null;
     outTime.value = null;
     description.value = null;
+    if (form.value) {
+      form.value.resetValidation();
+    }
   }
   
   const submitForm = async () => {
@@ -195,5 +220,18 @@ const reportingTypeOptions = ref([
     }
   };
   
+  function validateEndTime(endTime) {
+  if (!endTime || !inTime.value) return true; // No validation if endTime or inTime is empty
+
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  const [startHours, startMinutes] = inTime.value.split(':').map(Number);
+
+  if (endHours > startHours || (endHours === startHours && endMinutes > startMinutes)) {
+    return true;
+  } else {
+    return 'End time must be later than Start Time';
+  }
+}
+
   defineExpose({ openForm });
   </script>

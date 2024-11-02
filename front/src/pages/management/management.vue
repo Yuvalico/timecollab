@@ -24,6 +24,10 @@ const users = ref([]);
 const companies = ref([]);
 const companiesWithAdmins = ref([]);
 const selectedCompany = ref("Filter Users by Company"); // To store the selected company name
+const showRemoveUserDialog = ref(false);
+const userToRemove = ref(null);
+const employmentEndDate = ref(new Date()); 
+const today = new Date().toISOString().slice(0, 10); 
 
 
 // Headers for tables
@@ -145,19 +149,52 @@ function editUser(user) {
 
 const userFormRef = ref(null); // Ref for the UserForm component
 
-const removeUser = async (user) => {
+// const removeUser = async (user) => {
+//   try {
+//     const response = await api.put(`${endpoints.users.remove}/${user.email}`);
+
+//     if (response.status === 200) {
+//       console.log('User removed successfully');
+//       // Refresh the users list after removal
+//       fetchUsers();
+//     } else {
+//       console.error('Failed to remove user');
+//     }
+//   } catch (error) {
+//     console.error('Error removing user:', error);
+//   }
+// };
+const removeUser = (user) => {
+  userToRemove.value = user;
+  showRemoveUserDialog.value = true;
+};
+
+const cancelRemoveUser = () => {
+  showRemoveUserDialog.value = false;
+  userToRemove.value = null;
+  employmentEndDate.value = new Date(); // Reset the date picker to today
+};
+
+const confirmRemoveUser = async () => {
   try {
-    const response = await api.put(`${endpoints.users.remove}/${user.email}`);
+    const user = userToRemove.value;
+    user.employment_end = employmentEndDate.value ? employmentEndDate.value.toISOString() : new Date().toISOString();
+
+    const response = await api.put(`${endpoints.users.remove}/${user.email}`, user);
 
     if (response.status === 200) {
       console.log('User removed successfully');
-      // Refresh the users list after removal
       fetchUsers();
     } else {
       console.error('Failed to remove user');
     }
   } catch (error) {
     console.error('Error removing user:', error);
+  } finally {
+    showRemoveUserDialog.value = false;
+    userToRemove.value = null;
+    employmentEndDate.value = new Date();
+    fetchUsers();
   }
 };
 
@@ -282,5 +319,22 @@ onMounted(() => {
         </SimpleTable>
       </VCard>
     </VCol>
+    <VDialog v-model="showRemoveUserDialog" persistent max-width="600px">
+      <VCard>
+        <VCardTitle>
+          <span class="headline">Remove User</span>
+        </VCardTitle>
+        <VCardText>
+          <div>
+            <p v-if="userToRemove">Are you sure you want to remove <strong>{{ userToRemove.first_name }} {{userToRemove.first_name}}</strong>?</p> 
+            <VDatePicker v-model="employmentEndDate" :value="today" /> 
+          </div>
+        </VCardText>
+        <VCardActions>
+          <VBtn color="secondary" variant="outlined" @click="cancelRemoveUser">Cancel</VBtn>
+          <VBtn color="error" @click="confirmRemoveUser">Remove</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </VRow>
 </template>
