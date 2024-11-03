@@ -13,6 +13,7 @@ const api = inject('api');
 const authStore = useAuthStore();
 const router = useRouter();
 
+const loginError = ref(null);
 const form = ref({
   email: '',
   password: '',
@@ -71,7 +72,16 @@ const handleLogin = async () => {
     router.push('/timewatch');
   } catch (error) {
     console.error('Login failed:', error);
-    // Optionally, show an error message to the user
+
+    // Check if the error response contains an error message
+    if (error.response && error.response.data && error.response.data.error) {
+      loginError.value = `Login failed. ${error.response.data.error}`;
+    } else {
+      // Set a generic error message if no specific message is found
+      loginError.value = 'Login failed. Please check your credentials.'; 
+    }
+    form.value.email = '';
+    form.value.password = '';
   }
 };
 </script>
@@ -150,6 +160,10 @@ const handleLogin = async () => {
               >
                 Login
               </VBtn>
+
+              <div v-if="loginError" class="text-error-login">
+                {{ loginError }}
+              </div>
             </VCol>
 
           </VRow>
@@ -162,4 +176,10 @@ const handleLogin = async () => {
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth";
+
+.text-error-login {
+  color: red; /* Or any color you prefer for error messages */
+  text-align: center;
+  margin-top: 10px; /* Add some spacing above the message */
+}
 </style>
