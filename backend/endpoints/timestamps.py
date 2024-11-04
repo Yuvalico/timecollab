@@ -1,11 +1,14 @@
 from flask import Blueprint, request, jsonify
-from models import db, User, TimeStamp
+from models import db, User, UserRepository, TimeStamp, TimeStampRepository
 from datetime import datetime, timezone
 from cmn_utils import print_exception, extract_jwt
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from cmn_defs import *
 
 timestamps_bp = Blueprint('timestamps', __name__)
+
+user_repository = UserRepository(db)
+timestamp_repository = TimeStampRepository(db)
 
 @timestamps_bp.route('/', methods=['POST'])
 @jwt_required() 
@@ -26,7 +29,7 @@ def create_timestamp():
              return jsonify({'error': 'Unauthorized access'}), 403
          
 
-        user: User = User.query.filter_by(email=user_email).first()
+        user: User = user_repository.get_user_by_email(email=user_email)
         if not user:
             return jsonify({'error': f'User not found for email: {user_email}'}), 404
         
@@ -116,11 +119,11 @@ def punch_out():
         if user_permission == E_PERMISSIONS.employee and current_user_email != user_email:
              return jsonify({'error': 'Unauthorized access'}), 403
          
-        user: User = User.query.filter_by(email=user_email).first()
+        user: User = user_repository.get_user_by_email(email=user_email).first()
         if not user:
             return jsonify({'error': f'User not found for id: {user_email}'}), 404
 
-        entered_by_user = User.query.filter_by(email=entered_by).first()
+        entered_by_user = user_repository.get_user_by_email(email=entered_by).first()
         if not entered_by_user:
             return jsonify({'error': f'Entered by user not found for email: {entered_by}'}), 404
         
@@ -229,7 +232,7 @@ def check_punch_in_status():
         if user_permission == E_PERMISSIONS.employee and current_user_email != user_email:
              return jsonify({'error': 'Unauthorized access'}), 403
          
-        user: User = User.query.filter_by(email=user_email).first()
+        user: User = user_repository.get_user_by_email(email=user_email).first()
         if not user:
             return jsonify({'error': f'User not found for email: {user_email}'}), 404
         
@@ -289,7 +292,7 @@ def get_timestamps_range(user_email):
     try:
         current_user_email, user_permission, user_company_id = extract_jwt()
 
-        requested_user: User = User.query.filter_by(email=user_email).first()
+        requested_user: User = user_repository.get_user_by_email(email=user_email).first()
         print(f"Requested user email is: {user_email}")
         if not requested_user:
             return jsonify({'error': 'User not found'}), 404

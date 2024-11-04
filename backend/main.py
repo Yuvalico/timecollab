@@ -7,6 +7,7 @@ from endpoints.users import users_blueprint
 from endpoints.timestamps import timestamps_bp
 from endpoints.reports import reports_bp
 from config import Config
+from db_init import create_db
 from dotenv import load_dotenv
 from models import db
 from flask_jwt_extended import JWTManager

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from models import User, Company, db  
+from models import UserRepository, User, Company, CompanyRepository, db  
 import bcrypt
 from cmn_utils import *
 from cmn_defs import *
@@ -8,6 +8,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 
 users_blueprint = Blueprint('users', __name__)
+user_repository = UserRepository(db)
+company_repository = CompanyRepository(db)
 
 # Create user route
 @users_blueprint.route('/create-user', methods=['POST'])
@@ -41,46 +43,37 @@ def create_user():
             return jsonify({'error': 'Invalid permission type'}), 403
 
         # Check if user already exists using SQLAlchemy
-        existing_user = User.query.filter_by(email=email).first()
+        existing_user: User = user_repository.get_user_by_email(email) 
         if existing_user:
             return jsonify({'error': 'User email already exists'}), 400
 
         # Get the company_id using SQLAlchemy
-        company: Company = Company.query.filter_by(company_name=company_name).first()
+        company: Company = company_repository.get_company_by_name(company_name)
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
-        try:
-            employment_start = datetime.fromisoformat(employment_start_str.replace('Z', '+00:00')) if employment_start_str else None
-            employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00')) if employment_end_str else None
-        except ValueError:
-            return jsonify({'error': 'Invalid datetime format'}), 400
-
         # Create new user object
-        new_user = User(
+        new_user = user_repository.create_user(
             email=email,
             first_name=first_name,
             last_name=last_name,
             company_id=company.company_id,  # Associate with the company
             role=role,
             permission=permission_int,
-            pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            is_active=True,
+            password=password,
             salary=salary,
             work_capacity=work_capacity,
-            employment_start=employment_start,
-            employment_end=employment_end,
+            employment_start=employment_start_str,
+            employment_end=employment_end_str,
             weekend_choice=weekend_choice
         )
+        if new_user:
+            return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201 
 
-        # Add and commit using SQLAlchemy
-        db.session.add(new_user)
-        db.session.commit()
-
-        return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201 
+        else:
+            return jsonify({'message': 'Failed to create new user'}), 500 
 
     except Exception as e:
-        db.session.rollback()  # Rollback in case of an error
         print_exception(e)
         return jsonify({'error': 'Server error'}), 500
 
@@ -109,51 +102,25 @@ def update_user():
         weekend_choice = data.get('weekend_choice')
 
         # Get the user using SQLAlchemy
-        user: User = User.query.get(user_email)
+        user: User = user_repository.get_user_by_email(user_email)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Update user attributes
-        if first_name:
-            user.first_name = first_name
-        if last_name:
-            user.last_name = last_name
-        if mobile_phone:
-            user.mobile_phone = mobile_phone
-        if email:
-            user.email = email
-        if role:
-            user.role = role
-        if permission:
-            user.permission = permission
-        if salary:
-            user.salary = salary
-        if work_capacity:
-            user.work_capacity = work_capacity
-        if employment_start_str:
-            employment_start = datetime.fromisoformat(employment_start_str.replace('Z', '+00:00')) if employment_start_str else None
-            user.employment_start = employment_start
-        if employment_end_str:
-            employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00')) if employment_end_str else None
-            user.employment_end = employment_end
-        if weekend_choice:
-            user.weekend_choice = weekend_choice
+        success: bool = user_repository.update_user(user, first_name, last_name=last_name, mobile_phone=mobile_phone, \
+            role=role, permission=permission, salary=salary, work_capacity=work_capacity,\
+                employment_start_str=employment_start_str, employment_end_str=employment_end_str, weekend_choice=weekend_choice,\
+                    password=password)
         
-
-        if password:
-            user.pass_hash=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-        # Commit changes using SQLAlchemy
-        db.session.commit()
-
-        return jsonify({'message': 'User updated successfully', 'user': user.to_dict()}), 200
+        if success:
+            return jsonify({'message': 'User updated successfully', 'user': user.to_dict()}), 200
+        else:
+            return jsonify({'message': 'User update Failed'}), 500
 
     except Exception as e:
-        db.session.rollback()
         print_exception(e)
         return jsonify({'error': 'Server error'}), 500
 
-# Remove user route (soft delete)
+# Remove user 
 @users_blueprint.route('/remove-user/<string:user_email>', methods=['PUT']) 
 @jwt_required() 
 def remove_user(user_email):
@@ -167,18 +134,18 @@ def remove_user(user_email):
 
 
         # Soft delete user using SQLAlchemy
-        user = User.query.get(user_email)
+        user = user_repository.get_user_by_email(user_email)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        user.is_active = False
-        user.employment_end = datetime.fromisoformat(employment_end_str.replace('Z', '+00:00'))  # Set employment_end
-        db.session.commit()
+        success: bool = user_repository.delete_user(user, employment_end_str)
 
-        return jsonify({'message': 'User removed successfully', 'user': user.to_dict()}), 200
-
+        if success:
+            return jsonify({'message': 'User removed successfully', 'user': user.to_dict()}), 200
+        else:
+            return jsonify({'message': 'User remove failed'}), 500
+        
     except Exception as e:
-        db.session.rollback()
         print_exception(e)
         return jsonify({'error': 'Server error'}), 500
 
@@ -192,41 +159,16 @@ def get_active_users():
             return jsonify({'error': 'Unauthorized access'}), 403 
         
         if E_PERMISSIONS.to_enum(user_permission) ==E_PERMISSIONS.net_admin:
-            # Query active users using SQLAlchemy and join with companies
-            active_users: list[User] = (
-                db.session.query(User, Company)
-                .join(Company, User.company_id == Company.company_id)
-                .filter(User.is_active == True)
-                .all()
-            )
-
-            # Format the results
-            user_data = []
-            for user, company in active_users:
-                user_dict = user.to_dict()  # Assuming you have a to_dict() method
-                user_dict['company_name'] = company.company_name
-                user_dict['permission'] = user.permission
-                user_data.append(user_dict)
+            active_users: list[User] = user_repository.get_all_active_users()
         
         if E_PERMISSIONS.to_enum(user_permission) == E_PERMISSIONS.employer:
-            # Fetch users for the employer's company
-            active_users = (
-                db.session.query(User, Company)
-                .join(Company, User.company_id == Company.company_id)
-                .filter(
-                    User.is_active == True,  # Filter for active users
-                    User.company_id == user_company_id  # Filter by the employer's company_id
-                )
-                .all()
-            )
+            active_users: list[User] = user_repository.get_all_active_users(user_company_id)
 
-            # Format the results (similar to net_admin, but no need to join with Company)
-            user_data = []
-            for user, company in active_users:  # No need to unpack company here
-                user_dict = user.to_dict()
-                user_dict['company_name'] = company.company_name  # You might need to fetch the company name separately
-                user_dict['permission'] = user.permission
-                user_data.append(user_dict)
+        user_data = []
+        for user in active_users:  # No need to unpack company here
+            user_dict = user.to_dict()
+            user_dict['company_name'] = company_repository.get_company_by_id(user.company_id).company_name  # You might need to fetch the company name separately
+            user_data.append(user_dict)
 
         return jsonify(user_data), 200
 
@@ -240,22 +182,19 @@ def get_active_users():
 def get_all_users():
     try:
         current_user_email, user_permission, user_company_id = extract_jwt()
-
-        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.net_admin:
+        if E_PERMISSIONS.to_enum(user_permission) > E_PERMISSIONS.employer:
             return jsonify({'error': 'Unauthorized access'}), 403 
         
-        # Query all users using SQLAlchemy and join with companies
-        all_users = (
-            db.session.query(User, Company)
-            .join(Company, User.company_id == Company.company_id)
-            .all()
-        )
+        if E_PERMISSIONS.to_enum(user_permission) ==E_PERMISSIONS.net_admin:
+            active_users: list[User] = user_repository.get_active_users()
+        
+        if E_PERMISSIONS.to_enum(user_permission) == E_PERMISSIONS.employer:
+            active_users: list[User] = user_repository.get_active_users(user_company_id)
 
-        # Format the results
         user_data = []
-        for user, company in all_users:
+        for user in active_users:  # No need to unpack company here
             user_dict = user.to_dict()
-            user_dict['company_name'] = company.company_name
+            user_dict['company_name'] = user.company.company_name  # You might need to fetch the company name separately
             user_data.append(user_dict)
 
         return jsonify(user_data), 200
@@ -271,7 +210,7 @@ def user_by_email(email):
         # Get the identity (email) of the current user from the JWT
         current_user_email, user_permission, user_company_id = extract_jwt()
         # Query the requested user by email
-        requested_user: User = User.query.filter_by(email=email).first()
+        requested_user: User = user_repository.get_user_by_email(email=email)
         if not requested_user:
             return jsonify({'error': 'User not found'}), 404
 
@@ -298,15 +237,16 @@ def change_password():
         data = request.get_json()
         new_password = data.get('new_password')
 
-        user = User.query.get(current_user_email)
+        user = user_repository.get_user_by_email(current_user_email)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
         # Hash the new password
-        user.pass_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        db.session.commit()
-
-        return jsonify({'message': 'Password changed successfully'}), 200
+        success: bool = user_repository.change_password(new_password)
+        if success:
+            return jsonify({'message': 'Password changed successfully'}), 200
+        else:
+            return jsonify({'message': 'Password change failed'}), 500
 
     except Exception as e:
         print_exception(e)
