@@ -403,8 +403,11 @@ watch(selectedCompany, (newCompany) => {
 
 watch(selectedUser, (newUser) => {
   console.log('Selected User:', newUser);
-  selectedUserData.value = userList.value.find(user => user.email === selectedUser.value);
-  updateCalendar();
+  if (newUser != ''){
+
+    selectedUserData.value = userList.value.find(user => user.email === selectedUser.value);
+    updateCalendar();
+  }
 });
 
 </script>

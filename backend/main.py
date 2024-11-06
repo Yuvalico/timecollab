@@ -50,7 +50,7 @@ app.register_blueprint(reports_bp, url_prefix=BASE_API + '/reports')
 @cross_origin(origin='http://localhost:5173', supports_credentials=True)
 def not_found(error):
     response = jsonify({'error': 'Not found'})
-    response.status_code = 404
+    response.status_code = E_RC.RC_NOT_FOUND
     return response
 
 # Print all registered routes

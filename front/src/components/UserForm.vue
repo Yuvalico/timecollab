@@ -72,7 +72,7 @@ watch(formValid, (newVal) => {
 });
 
 watch(
-  () => [firstName.value, lastName.value, email.value, selectedCompany.value, password.value, role.value, permission.value, employmentStart.value, salary.value, workCapacity.value],
+  () => [firstName.value, lastName.value, email.value, selectedCompany.value, password.value, role.value, permission.value, employmentStart.value, salary.value, workCapacity.value, selectedWeekDays.value],
   () => validateForm()
 );
 
@@ -283,11 +283,12 @@ defineExpose({
             </VCol>
             
             <VCol cols="12">
-                <VDatePicker 
+              <VDatePicker 
                 v-model="employmentStart" 
                 title="employement start date" 
                 label="Employment Start" 
-                :rules="[requiredRule]"></VDatePicker>
+                :rules="[requiredRule]">
+              </VDatePicker>
             </VCol>
   
             

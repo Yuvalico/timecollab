@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
-from models import UserRepository, User, db
+from models import User, db
+from classes.RC import RC
+from classes.UserRepository import UserRepository
 import bcrypt
 import datetime
 from cmn_utils import *
@@ -8,7 +10,6 @@ from cmn_utils import *
 
 auth_blueprint = Blueprint('auth', __name__)
 user_repository = UserRepository(db)  
-
 
 # Login route
 @auth_blueprint.route('/login', methods=['POST'])
@@ -18,21 +19,19 @@ def login():
     password = data.get('password')
     remember = data.get('remember')
     try:
-        user: User = user_repository.get_user_by_email(email)
-
-        if not user:
-            return jsonify({'error': 'Invalid credentials'}), 400
+        user: User|RC = user_repository.get_user_by_email(email)
+        if isinstance (user, RC):
+            return createRcjson(user)
+        
         if not user.pass_hash:
-            return jsonify({'error': 'Password not set for this user'}), 400
+            return jsonify({'error': 'Password not set for this user'}), E_RC.RC_INVALID_INPUT
 
-        # Verify the password
         if not bcrypt.checkpw(password.encode('utf-8'), user.pass_hash.encode('utf-8')):
-            return jsonify({'error': 'Invalid credentials'}), 400
+            return jsonify({'error': 'Invalid credentials'}), E_RC.RC_INVALID_INPUT
 
-        # Generate access and refresh tokens using Flask-JWT-Extended
         additional_claims = {
-            'permission': user.permission,  # Include the user's permission in the token
-            'company_id': user.company_id  # Include the user's permission in the token
+            'permission': user.permission,  
+            'company_id': user.company_id  
         }
         access_token = create_access_token(identity=user.email, fresh=True, additional_claims=additional_claims)
         refresh_token = create_refresh_token(identity=user.email)
@@ -42,19 +41,18 @@ def login():
             'refresh_token': refresh_token,
             'permission': user.permission,
             'company_id': user.company_id
-        }), 200
+        }), E_RC.RC_OK
 
     except Exception as e:
-        # Handle exceptions gracefully (you can customize this)
         print_exception(e)
-        return jsonify({'error': 'Server error'}), 500
+        return jsonify({'error': 'Server error'}), E_RC.RC_ERROR_DATABASE
 
-# Verify Token route (using fresh_jwt_required)
+# Verify Token route 
 @auth_blueprint.route('/verify', methods=['GET'])
-@jwt_required(fresh=True) # Require a fresh token for verification
+@jwt_required(fresh=True) 
 def verify_token():
     current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
+    return jsonify(logged_in_as=current_user), E_RC.RC_OK
 
 # Refresh token endpoint
 @auth_blueprint.route('/refresh', methods=['POST'])
@@ -64,15 +62,13 @@ def refresh():
         current_user = get_jwt_identity()
         
         # Query the user using SQLAlchemy
-        user: User = user_repository.get_user_by_email(email=current_user)
-
-        # If user is not found or password hash is missing
-        if not user:
-            return jsonify({'error': 'Invalid refresh token'}), 400
+        user: User|RC = user_repository.get_user_by_email(email=current_user)
+        if isinstance (user, RC):
+            return createRcjson(user)
 
         additional_claims = {
-            'permission': user.permission,  # Include the user's permission in the token
-            'company_id': user.company_id  # Include the user's permission in the token
+            'permission': user.permission,  
+            'company_id': user.company_id 
         }
         new_access_token = create_access_token(identity=current_user, fresh=False, additional_claims=additional_claims)
         new_refresh_token = create_refresh_token(identity=current_user) 
@@ -80,9 +76,8 @@ def refresh():
         return jsonify({
             'access_token': new_access_token, 
             'refresh_token': new_refresh_token
-            }), 200
+            }), E_RC.RC_OK
     
     except Exception as e:
-        # Handle exceptions gracefully (you can customize this)
         print_exception(e)
-        return jsonify({'error': 'Server error'}), 500
+        return jsonify({'error': 'Server error'}), E_RC.RC_ERROR_DATABASE

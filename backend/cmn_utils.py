@@ -9,6 +9,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy_utils import database_exists, create_database
 from config import *
 from cmn_defs import *
+from classes.RC import RC
+from flask import jsonify
 
 def print_exception(exception):
     """Prints a formatted exception message in a table with a vertical separator.
@@ -85,3 +87,17 @@ def format_hours_to_hhmm(seconds):
   hours = int(seconds // 3600)
   minutes = int((seconds % 3600) // 60)
   return f"{hours:02d}:{minutes:02d}"
+
+def iso2datetime(iso_str: str):
+    return datetime.fromisoformat(iso_str.replace('Z', '+00:00')) if iso_str else None
+
+def datetime2iso(date_time: datetime):
+    return date_time.isoformat() if date_time else None
+
+def createRcjson(rc: RC):
+    if rc.code == E_RC.RC_OK:
+        msg = "message"
+    else:
+        msg = "error"
+        
+    return jsonify({f"{msg}": rc.description}), rc.code

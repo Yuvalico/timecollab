@@ -48,7 +48,7 @@
                 >
                   Cancel
                 </VBtn>
-                <VBtn type="submit" :disabled="!isFormValid">
+                <VBtn type="submit" :disabled="!isFormValid && reportingType === 'work'">
                   {{ isEditing ? 'Update' : 'Submit' }}
                 </VBtn>
               </VCol>
@@ -226,7 +226,7 @@ watch(
   const [endHours, endMinutes] = endTime.split(':').map(Number);
   const [startHours, startMinutes] = inTime.value.split(':').map(Number);
 
-  if (endHours > startHours || (endHours === startHours && endMinutes > startMinutes)) {
+  if (endHours > startHours || (endHours === startHours && endMinutes >= startMinutes)) {
     return true;
   } else {
     return 'End time must be later than Start Time';

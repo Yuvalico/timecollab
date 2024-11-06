@@ -14,7 +14,7 @@ class E_PERMISSIONS(IntEnum):
         
         except Exception as e:
             return "unknown"
-    
+        
     @staticmethod
     def to_enum(value):
         """
@@ -30,5 +30,12 @@ class E_PERMISSIONS(IntEnum):
             if member.value == value:
                 return member
         return None  # Or raise an exception if you want to handle invalid values strictly
-        
-    # Permission maps
+
+class E_RC(IntEnum):
+    RC_OK = 200
+    RC_SUCCESS = 201
+    RC_ERROR_DATABASE = 500
+    RC_NOT_FOUND = 404
+    RC_UNAUTHORIZED = 403
+    RC_INVALID_INPUT = 422
+    
