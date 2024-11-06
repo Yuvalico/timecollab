@@ -7,6 +7,7 @@ from classes.TimeStampRepository import TimeStampRepository
 from cmn_defs import *
 from cmn_utils import *
 from datetime import datetime, timezone, timedelta
+import calendar
 
 
 class ReportService:
@@ -15,14 +16,20 @@ class ReportService:
         self.timestamp_repository: TimeStampRepository = timestamp_repository
         self.company_repository: CompanyRepository = company_repository
 
-    def user_report(self, user_email: str, time_stamps: list[TimeStamp], start_date: datetime, end_date: datetime) -> dict | RC:
+    def user_report(self, user_email, date_range_type, selected_year, selected_month, start_date_str, end_date_str) -> dict | RC:
+        result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
+        if isinstance(result, RC):
+            return result
+        
+        start_date, end_date = result
 
         user: User = self.user_repository.get_user_by_email(user_email)
-        if isinstance (user,RC):
+        if isinstance (user, RC):
             return user
         
-        employee_name = user.first_name + " " + user.last_name
-        salary = float(user.salary or 0)  # Get salary, handle potential None, convert to float
+        time_stamps = self.timestamp_repository.get_range(start_date, end_date, user_email)
+        if isinstance(time_stamps, RC):
+            return time_stamps
 
         days_worked, paid_days_off, unpaid_days_off, days_not_reported, total_hours_worked,\
             potential_work_days, daily_breakdown = self._calculate_work_days(user, time_stamps, start_date, end_date)
@@ -31,21 +38,19 @@ class ReportService:
 
         return report_entry
 
-    def company_summary(self, company_id, time_stamps, start_date, end_date):
-
+    def company_summary(self, company_id, date_range_type, selected_year, selected_month, start_date_str, end_date_str):
+        
+        result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
+        if isinstance(result, RC):
+            return result
+        
+        start_date, end_date = result
+        
         users: list[User] = self.company_repository.get_company_users(company_id=company_id)
         report = []
         for user in users:
             timestamps: list[TimeStamp] = self.timestamp_repository.get_range(start_date, end_date, user.email)
 
-            # Calculate days worked, paid off, unpaid off, and not reported
-            days_worked = 0
-            paid_days_off = 0
-            unpaid_days_off = 0
-            days_not_reported = 0
-            total_hours_worked =0
-            potential_work_days = 0
-            
             days_worked, paid_days_off, unpaid_days_off, days_not_reported, total_hours_worked, potential_work_days, _\
                 =self._calculate_work_days(user, timestamps, start_date, end_date)
             
@@ -54,36 +59,49 @@ class ReportService:
 
         return report
 
-    def company_overview(self, company: Company, time_stamps: list[TimeStamp]):
-        employees: list[User] = self.company_repository.get_company_users(company_id=company.company_id)
-        num_employees = len(employees)
-        total_hours_worked = 0
-        total_monthly_salary = 0
-        monthly_payments = []
-
-        for employee in employees:
-            employee_time_stamps = [ts for ts in time_stamps if ts.user_email == employee.email]
-            employee_hours_worked = 0
-            for ts in employee_time_stamps:
-                employee_hours_worked += ts.total_work_time or 0
-            
-            total_hours_worked += employee_hours_worked
-
-            # Calculate monthly payment for the employee
-            monthly_payment = (employee_hours_worked / 3600.0) * float(employee.salary or 0)
-            total_monthly_salary += monthly_payment
-            monthly_payments.append(round(monthly_payment, 2))
+    def company_overview(self, date_range_type: str, selected_year: str, selected_month: str, start_date_str: str, end_date_str: str):
+        result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
+        if isinstance(result, RC):
+            return result
         
-        admin_users: list[User] = self.company_repository.get_company_admins(company.company_id)
-        admin_names = [admin.first_name + " " + admin.last_name for admin in admin_users]
-        return {
-            "companyName": company.company_name,
-            "numEmployees": num_employees,
-            "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),  # Convert to hours
-            "totalMonthlySalary": round(total_monthly_salary, 2),
-            "monthlyPayments": monthly_payments,
-            "adminNames": admin_names
-        }
+        start_date, end_date = result
+        
+        companies: list[Company] = self.company_repository.get_all_active_companies()
+        
+        report = []
+        for company in companies:
+            employees: list[User] = self.company_repository.get_company_users(company_id=company.company_id)
+            num_employees = len(employees)
+            total_hours_worked = 0
+            total_monthly_salary = 0
+            monthly_payments = []
+
+            for employee in employees:
+                employee_time_stamps = self.timestamp_repository.get_range(start_date, end_date, employee.email)
+                employee_hours_worked = 0
+                for ts in employee_time_stamps:
+                    employee_hours_worked += ts.total_work_time or 0
+                
+                total_hours_worked += employee_hours_worked
+
+                # Calculate monthly payment for the employee
+                monthly_payment = (employee_hours_worked / 3600.0) * float(employee.salary or 0)
+                total_monthly_salary += monthly_payment
+                monthly_payments.append(round(monthly_payment, 2))
+            
+            admin_users: list[User] = self.company_repository.get_company_admins(company.company_id)
+            admin_names = [admin.first_name + " " + admin.last_name for admin in admin_users]
+            report.append( {
+                "companyName": company.company_name,
+                "numEmployees": num_employees,
+                "totalHoursWorked": format_hours_to_hhmm(total_hours_worked),
+                "totalMonthlySalary": round(total_monthly_salary, 2),
+                "monthlyPayments": monthly_payments,
+                "adminNames": admin_names
+            })
+            
+        return report
+        
         
     def _calculate_work_days(self, user: User, time_stamps: list[TimeStamp], start_date: datetime, end_date: datetime) -> tuple:
         
@@ -163,3 +181,30 @@ class ReportService:
         }
         
         return report
+    
+    def _set_dates_range(self, date_range_type: str, selected_year: str, selected_month: str, start_date_str: str, end_date_str: str):
+        if date_range_type == 'monthly':
+            if not selected_year or not selected_month:
+                return RC(E_RC.RC_INVALID_INPUT, 'Year and month are required for monthly reports')
+
+            year = int(selected_year)
+            month = int(selected_month)
+            start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+            end_date = datetime(year, month, calendar.monthrange(year, month)[1], tzinfo=timezone.utc)
+            return start_date, end_date
+        
+        elif date_range_type == 'custom':
+            if not start_date_str or not end_date_str:
+                return RC(E_RC.RC_INVALID_INPUT, 'Start and end dates are required for custom reports')
+            try:
+                start_date = iso2datetime(start_date_str),
+                end_date = iso2datetime(end_date_str),
+                if end_date < start_date:
+                    return RC(E_RC.RC_INVALID_INPUT, 'Start date must earlier than end date')
+                
+                return start_date, end_date
+            
+            except ValueError:
+                return RC(E_RC.RC_INVALID_INPUT, 'Invalid date format')
+        else:
+            return RC(E_RC.RC_INVALID_INPUT, 'Invalid date range type')

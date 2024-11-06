@@ -35,7 +35,7 @@ def generate_user_report():
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        requested_user: User = user_repository.get_user_by_email(current_user_email)
+        requested_user: User = user_repository.get_user_by_email(user_email)
         if isinstance (requested_user,RC):
             return createRcjson(requested_user)
         
@@ -44,38 +44,15 @@ def generate_user_report():
                 and user_permission == E_PERMISSIONS.employee:
             return jsonify({'error': 'Unauthorized to access this report'}), E_RC.RC_UNAUTHORIZED
 
-        if E_PERMISSIONS.employer == user_permission and (
-                user_company_id != company_id
+        if E_PERMISSIONS.employer == user_permission and (user_company_id != company_id
                 or str(requested_user.company_id) != str(user_company_id)):
             return jsonify({'error': 'Unauthorized to access this report'}), E_RC.RC_UNAUTHORIZED
         
-        # Determine date range
-        if date_range_type == 'monthly':
-            if not selected_year or not selected_month:
-                return jsonify({'error': 'Year and month are required for monthly reports'}), E_RC.RC_INVALID_INPUT
-
-            year = int(selected_year)
-            month = int(selected_month)
-            start_date = datetime(year, month, 1, tzinfo=timezone.utc)
-            end_date = datetime(year, month, calendar.monthrange(year, month)[1], tzinfo=timezone.utc)
-        elif date_range_type == 'custom':
-            if not start_date_str or not end_date_str:
-                return jsonify({'error':'Start and end dates are required for custom reports'}), E_RC.RC_INVALID_INPUT
-            try:
-                start_date = iso2datetime(start_date_str),
-                end_date = iso2datetime(end_date_str),
-                if end_date < start_date:
-                    return jsonify({'error': 'Start date must earlier than end date'}), E_RC.RC_INVALID_INPUT
-                
-            except ValueError:
-                return jsonify({'error': 'Invalid date format'}), E_RC.RC_INVALID_INPUT
-        else:
-            return jsonify({'error': 'Invalid date range type'}), E_RC.RC_INVALID_INPUT
-
-        time_stamps = timestamp_repository.get_range(start_date, end_date, user_email)
-
-        report = report_service.user_report(user_email, time_stamps, start_date, end_date)
-        return jsonify(report)
+        report = report_service.user_report(user_email, date_range_type, selected_year, selected_month, start_date_str, end_date_str)
+        if isinstance(report, RC):
+            return createRcjson(report)
+        
+        return jsonify(report), E_RC.RC_OK
 
     except Exception as e:
         print_exception(e)
@@ -108,29 +85,7 @@ def generate_company_summary_report():
         if E_PERMISSIONS.employer == user_permission and str(user_company_id) != str(company_id):
             return jsonify({'error': 'Unauthorized to access this report'}), E_RC.RC_UNAUTHORIZED
 
-        if date_range_type == 'monthly':
-            if not selected_year or not selected_month:
-                return jsonify({'error': 'Year and month are required for monthly reports'}), E_RC.RC_INVALID_INPUT
-
-            year = int(selected_year)
-            month = int(selected_month)
-            start_date = datetime(year, month, 1, tzinfo=timezone.utc)
-            end_date = datetime(year, month, calendar.monthrange(year, month)[1], tzinfo=timezone.utc)
-            
-        elif date_range_type == 'custom':
-            if not start_date_str or not end_date_str:
-                return jsonify({'error': 'Start and end dates are required for custom reports'}), E_RC.RC_INVALID_INPUT
-            try:
-                start_date = iso2datetime(start_date_str)
-                end_date = iso2datetime(end_date_str)
-            except ValueError:
-                return jsonify({'error': 'Invalid date format'}), E_RC.RC_INVALID_INPUT
-        else:
-            return jsonify({'error': 'Invalid date range type'}), E_RC.RC_INVALID_INPUT
-
-        time_stamps = timestamp_repository.get_range(start_date, end_date, company_id=company_id)
-
-        report = report_service.company_summary(company_id, time_stamps, start_date, end_date)
+        report = report_service.company_summary(company_id, date_range_type, selected_year, selected_month, start_date_str, end_date_str)
         return jsonify(report), E_RC.RC_OK
 
     except Exception as e:
@@ -153,35 +108,10 @@ def generate_company_overview_report():
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Determine date range
-        if date_range_type == 'monthly':
-            if not selected_year or not selected_month:
-                return jsonify({'error': 'Year and month are required for monthly reports'}), E_RC.RC_INVALID_INPUT
 
-            year = int(selected_year)
-            month = int(selected_month)
-            start_date = datetime(year, month, 1, tzinfo=timezone.utc)
-            end_date = datetime(year, month, calendar.monthrange(year, month)[1], tzinfo=timezone.utc)
-
-        elif date_range_type == 'custom':
-            if not start_date_str or not end_date_str:
-                return jsonify({'error': 'Start and end dates are required for custom reports'}), E_RC.RC_INVALID_INPUT
-            try:
-                start_date = iso2datetime(start_date_str),
-                end_date = iso2datetime(end_date_str),
-            except ValueError:
-                return jsonify({'error': 'Invalid date format'}), E_RC.RC_INVALID_INPUT
-        else:
-            return jsonify({'error': 'Invalid date range type'}), E_RC.RC_INVALID_INPUT
-
-        companies: list[Company] = company_repository.get_all_active_companies()  # Add is_active filter
-
-        report = []
-        for company in companies:
-            time_stamps = timestamp_repository.get_range(start_date, end_date, company.company_id)
-
-            company_data = report_service.company_overview(company, time_stamps)
-            report.append(company_data)
+        report = report_service.company_overview(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
+        if isinstance(report, RC):
+            return createRcjson(report)
 
         return jsonify(report), E_RC.RC_OK
 
