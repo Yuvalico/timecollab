@@ -1,5 +1,5 @@
-from classes.RC import RC
-from classes.RC import E_RC
+from classes.utilities.RC import RC
+from classes.utilities.RC import E_RC
 from enum import IntEnum
 
 class E_PERMISSIONS(IntEnum):

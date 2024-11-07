@@ -3,13 +3,13 @@ from models import db, User, TimeStamp, Company
 from datetime import datetime, timezone, timedelta
 from cmn_utils import *
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from classes.CompanyRepository import CompanyRepository
-from classes.RC import RC, E_RC
-from classes.ModelValidator import ModelValidator
-from classes.UserRepository import UserRepository
-from classes.TimeStampRepository import TimeStampRepository
-from classes.DomainClassFactory import DomainClassFactory
-from classes.ReportService import ReportService
+from classes.repositories.CompanyRepository import CompanyRepository
+from classes.utilities.RC import RC, E_RC
+from classes.validators.ModelValidator import ModelValidator
+from classes.repositories.UserRepository import UserRepository
+from classes.repositories.TimeStampRepository import TimeStampRepository
+from classes.factories.DomainClassFactory import DomainClassFactory
+from classes.services.ReportService import ReportService
 
 reports_bp = Blueprint('reports', __name__)
 

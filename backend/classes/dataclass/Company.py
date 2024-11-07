@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from classes.BaseDomainClass import BaseDomainClass
+from classes.dataclass.BaseDomainClass import BaseDomainClass
 
 @dataclass
 class Company(BaseDomainClass):

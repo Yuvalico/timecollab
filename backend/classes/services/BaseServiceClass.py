@@ -1,8 +1,8 @@
 from abc import ABC
-from classes.BaseDomainClass import BaseDomainClass
-from classes.BaseRepository import BaseRepository
-from classes.BaseValidator import ValidatorInterface
-from classes.DomainClassFactory import DomainClassFactory
+from classes.dataclass.BaseDomainClass import BaseDomainClass
+from classes.repositories.BaseRepository import BaseRepository
+from classes.validators.BaseValidator import ValidatorInterface
+from classes.factories.DomainClassFactory import DomainClassFactory
 
 class BaseService(ABC):
     """

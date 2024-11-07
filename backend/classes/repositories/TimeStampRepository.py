@@ -1,9 +1,9 @@
 from models import *
 from typing import List
 from cmn_utils import print_exception, datetime2iso, iso2datetime
-from classes.TimeStamp import TimeStamp
-from classes.RC import RC, E_RC
-from classes.BaseRepository import BaseRepository
+from classes.dataclass.TimeStamp import TimeStamp
+from classes.utilities.RC import RC, E_RC
+from classes.repositories.BaseRepository import BaseRepository
 
 
 class TimeStampRepository(BaseRepository):

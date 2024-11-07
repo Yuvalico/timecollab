@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
 from models import db  
-from classes.UserRepository import UserRepository
-from classes.CompanyRepository import CompanyRepository
-from classes.ModelValidator import ModelValidator
-from classes.DomainClassFactory import DomainClassFactory
-from classes.User import User
-from classes.UserService import UserService
-from classes.RC import RC, E_RC
+from classes.repositories.UserRepository import UserRepository
+from classes.repositories.CompanyRepository import CompanyRepository
+from classes.validators.ModelValidator import ModelValidator
+from classes.factories.DomainClassFactory import DomainClassFactory
+from classes.dataclass.User import User
+from classes.services.UserService import UserService
+from classes.utilities.RC import RC, E_RC
 from cmn_utils import *
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 

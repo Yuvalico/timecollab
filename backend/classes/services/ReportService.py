@@ -1,14 +1,14 @@
-from classes.Company import Company
-from classes.User import User
-from classes.TimeStamp import TimeStamp
-from classes.CompanyRepository import CompanyRepository
-from classes.UserRepository import UserRepository
-from classes.TimeStampRepository import TimeStampRepository
-from classes.Permission import Permission
-from classes.BaseServiceClass import BaseService
-from classes.ModelValidator import ModelValidator
-from classes.DomainClassFactory import DomainClassFactory
-from classes.RC import RC, E_RC
+from classes.dataclass.Company import Company
+from classes.dataclass.User import User
+from classes.dataclass.TimeStamp import TimeStamp
+from classes.repositories.CompanyRepository import CompanyRepository
+from classes.repositories.UserRepository import UserRepository
+from classes.repositories.TimeStampRepository import TimeStampRepository
+from classes.utilities.Permission import Permission
+from classes.services.BaseServiceClass import BaseService
+from classes.validators.ModelValidator import ModelValidator
+from classes.factories.DomainClassFactory import DomainClassFactory
+from classes.utilities.RC import RC, E_RC
 from cmn_utils import *
 from datetime import datetime, timezone, timedelta
 import calendar

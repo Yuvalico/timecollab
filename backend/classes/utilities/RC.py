@@ -40,5 +40,6 @@ class RC:
             msg = "message"
         else:
             msg = "error"
-            
+        
+        print(f"{msg}: {self.description}")
         return jsonify({f"{msg}": self.description}), self.code

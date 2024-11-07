@@ -3,8 +3,8 @@ from cmn_utils import iso2datetime, datetime2iso
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from cmn_utils import print_exception, datetime2iso, iso2datetime
-from classes.Company import Company
-from classes.BaseDomainClass import BaseDomainClass
+from classes.dataclass.Company import Company
+from classes.dataclass.BaseDomainClass import BaseDomainClass
 
 
 @dataclass

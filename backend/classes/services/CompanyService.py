@@ -1,12 +1,12 @@
-from classes.Company import Company
-from classes.RC import RC
+from classes.dataclass.Company import Company
+from classes.utilities.RC import RC
 from cmn_utils import *
 from flask_sqlalchemy import SQLAlchemy
-from classes.CompanyRepository import CompanyRepository
-from classes.Permission import Permission
-from classes.BaseServiceClass import BaseService
-from classes.ModelValidator import ModelValidator
-from classes.DomainClassFactory import DomainClassFactory
+from classes.repositories.CompanyRepository import CompanyRepository
+from classes.utilities.Permission import Permission
+from classes.services.BaseServiceClass import BaseService
+from classes.validators.ModelValidator import ModelValidator
+from classes.factories.DomainClassFactory import DomainClassFactory
 
 class CompanyService(BaseService):
     def __init__(self, company_repository: CompanyRepository, validator: ModelValidator, factory: DomainClassFactory):

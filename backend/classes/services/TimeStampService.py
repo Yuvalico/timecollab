@@ -1,16 +1,16 @@
 from models import TimeStampModel
-from classes.User import User
-from classes.TimeStamp import TimeStamp
-from classes.RC import RC, E_RC
+from classes.dataclass.User import User
+from classes.dataclass.TimeStamp import TimeStamp
+from classes.utilities.RC import RC, E_RC
 from cmn_utils import *
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
-from classes.ModelValidator import ModelValidator
-from classes.TimeStampRepository import TimeStampRepository
-from classes.UserRepository import UserRepository
-from classes.Permission import Permission
-from classes.BaseServiceClass import BaseService
-from classes.DomainClassFactory import DomainClassFactory
+from classes.validators.ModelValidator import ModelValidator
+from classes.repositories.TimeStampRepository import TimeStampRepository
+from classes.repositories.UserRepository import UserRepository
+from classes.utilities.Permission import Permission
+from classes.services.BaseServiceClass import BaseService
+from classes.factories.DomainClassFactory import DomainClassFactory
 
 
 class TimeStampService(BaseService):

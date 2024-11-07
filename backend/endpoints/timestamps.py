@@ -1,16 +1,17 @@
 from flask import Blueprint, request, jsonify
 from models import db
-from classes import UserRepository, TimeStampRepository
-from classes.TimeStampService import TimeStampService
-from classes.ModelValidator import ModelValidator
-from classes.DomainClassFactory import DomainClassFactory
-from classes.RC import RC, E_RC 
+from classes.repositories.UserRepository import UserRepository
+from classes.repositories.TimeStampRepository import TimeStampRepository
+from classes.services.TimeStampService import TimeStampService
+from classes.validators.ModelValidator import ModelValidator
+from classes.factories.DomainClassFactory import DomainClassFactory
+from classes.utilities.RC import RC, E_RC 
 from cmn_utils import print_exception, extract_jwt, iso2datetime, datetime2iso
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 timestamps_bp = Blueprint('timestamps', __name__)
 
-timestamp_service: TimeStampService = TimeStampService(TimeStampRepository.TimeStampRepository(db), UserRepository.UserRepository(db), ModelValidator(), DomainClassFactory())
+timestamp_service: TimeStampService = TimeStampService(TimeStampRepository(db), UserRepository(db), ModelValidator(), DomainClassFactory())
 
 @timestamps_bp.route('/', methods=['POST'])
 @jwt_required() 

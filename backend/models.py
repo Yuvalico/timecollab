@@ -7,9 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, DateTime
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.hybrid import hybrid_property
-from classes.User import User
-from classes.Company import Company
-from classes.TimeStamp import TimeStamp
+from classes.dataclass.User import User
+from classes.dataclass.Company import Company
+from classes.dataclass.TimeStamp import TimeStamp
 from abc import ABC, abstractmethod
 
 db = SQLAlchemy()

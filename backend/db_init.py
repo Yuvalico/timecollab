@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy_utils import database_exists, create_database
 from config import *
 import bcrypt
-from classes.Permission import E_PERMISSIONS
+from classes.utilities.Permission import E_PERMISSIONS
 
 
 

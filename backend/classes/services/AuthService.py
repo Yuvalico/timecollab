@@ -1,10 +1,10 @@
 from flask_jwt_extended import create_access_token, create_refresh_token
 from models import User
-from classes.RC import RC, E_RC
-from classes.UserRepository import UserRepository
-from classes.ModelValidator import ModelValidator
-from classes.BaseServiceClass import BaseService
-from classes.DomainClassFactory import DomainClassFactory
+from classes.utilities.RC import RC, E_RC
+from classes.repositories.UserRepository import UserRepository
+from classes.validators.ModelValidator import ModelValidator
+from classes.services.BaseServiceClass import BaseService
+from classes.factories.DomainClassFactory import DomainClassFactory
 from cmn_utils import *
 import bcrypt
 

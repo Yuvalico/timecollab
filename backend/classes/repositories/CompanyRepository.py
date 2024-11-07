@@ -1,16 +1,14 @@
 from models import CompanyModel, UserModel
-from classes.User import User
-from classes.Company import Company
-from classes.RC import RC
+from classes.dataclass.User import User
+from classes.dataclass.Company import Company
+from classes.utilities.RC import RC, E_RC
 from cmn_utils import *
 from typing import List
 import bcrypt
 from cmn_utils import print_exception, datetime2iso, iso2datetime
 from flask_sqlalchemy import SQLAlchemy
-from classes.User import User
-from classes.RC import RC, E_RC
-from classes.BaseRepository import BaseRepository
-from classes.Permission import E_PERMISSIONS
+from classes.repositories.BaseRepository import BaseRepository
+from classes.utilities.Permission import E_PERMISSIONS
 
 
 

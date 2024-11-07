@@ -1,11 +1,11 @@
 from models import *
-from classes.User import User
+from classes.dataclass.User import User
 from cmn_utils import print_exception
-from classes.RC import RC, E_RC
+from classes.utilities.RC import RC, E_RC
 from flask_sqlalchemy import SQLAlchemy
 from flask_sqlalchemy.model import Model
 from models import db
-from classes import BaseDomainClass
+from classes.dataclass.BaseDomainClass import BaseDomainClass
 
 
 class BaseRepository:

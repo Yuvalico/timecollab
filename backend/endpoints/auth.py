@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 from models import User, db
-from classes.RC import RC
-from classes.UserRepository import UserRepository
-from classes.AuthService import AuthService
-from classes.ModelValidator import ModelValidator
-from classes.DomainClassFactory import DomainClassFactory
+from classes.utilities.RC import RC
+from classes.repositories.UserRepository import UserRepository
+from classes.services.AuthService import AuthService
+from classes.validators.ModelValidator import ModelValidator
+from classes.factories.DomainClassFactory import DomainClassFactory
 import bcrypt
 import datetime
 from cmn_utils import *

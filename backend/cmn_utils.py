@@ -8,7 +8,7 @@ from flask_jwt_extended import get_jwt_identity, get_jwt
 from sqlalchemy import create_engine, text  
 from sqlalchemy_utils import database_exists, create_database
 from config import *
-from classes.RC import RC, E_RC
+from classes.utilities.RC import RC, E_RC
 from flask import jsonify
 
 def print_exception(exception):

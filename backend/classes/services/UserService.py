@@ -1,15 +1,14 @@
-from classes.User import User
-from classes.RC import RC
+from classes.dataclass.User import User
 from cmn_utils import *
 import bcrypt
-from classes.ModelValidator import ModelValidator
-from classes.UserRepository import UserRepository
-from classes.CompanyRepository import CompanyRepository
-from classes.DomainClassFactory import DomainClassFactory
-from classes.Company import Company
-from classes.Permission import Permission
-from classes.RC import RC, E_RC
-from classes.BaseServiceClass import BaseService
+from classes.validators.ModelValidator import ModelValidator
+from classes.repositories.UserRepository import UserRepository
+from classes.repositories.CompanyRepository import CompanyRepository
+from classes.factories.DomainClassFactory import DomainClassFactory
+from classes.dataclass.Company import Company
+from classes.utilities.Permission import Permission
+from classes.utilities.RC import RC, E_RC
+from classes.services.BaseServiceClass import BaseService
 
 
 class UserService(BaseService):

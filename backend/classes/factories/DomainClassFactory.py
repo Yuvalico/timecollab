@@ -1,8 +1,8 @@
-from classes.User import User
-from classes.Company import Company
-from classes.TimeStamp import TimeStamp
-from classes.BaseFactoryClass import BaseFactory
-from classes.RC import RC, E_RC
+from classes.dataclass.User import User
+from classes.dataclass.Company import Company
+from classes.dataclass.TimeStamp import TimeStamp
+from classes.factories.BaseFactoryClass import BaseFactory
+from classes.utilities.RC import RC, E_RC
 from cmn_utils import *
 
 class DomainClassFactory(BaseFactory):

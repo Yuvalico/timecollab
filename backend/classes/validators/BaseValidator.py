@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from classes.RC import RC
+from classes.utilities.RC import RC
 
 class ValidatorInterface(ABC):
     """

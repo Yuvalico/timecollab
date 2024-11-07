@@ -1,9 +1,9 @@
 from datetime import datetime
-from classes.User import User
+from classes.dataclass.User import User
 from cmn_utils import *
 from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
-from classes.BaseDomainClass import BaseDomainClass
+from classes.dataclass.BaseDomainClass import BaseDomainClass
 
 
 

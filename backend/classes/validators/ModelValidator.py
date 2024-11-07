@@ -1,10 +1,10 @@
-from classes.BaseDomainClass import BaseDomainClass
-from classes.BaseValidator import ValidatorInterface
-from classes.User import User
-from classes.Company import Company
-from classes.TimeStamp import TimeStamp
-from classes.Permission import E_PERMISSIONS
-from classes.RC import RC, E_RC
+from classes.dataclass.BaseDomainClass import BaseDomainClass
+from classes.validators.BaseValidator import ValidatorInterface
+from classes.dataclass.User import User
+from classes.dataclass.Company import Company
+from classes.dataclass.TimeStamp import TimeStamp
+from classes.utilities.Permission import E_PERMISSIONS
+from classes.utilities.RC import RC, E_RC
 from datetime import datetime
 import re
 
