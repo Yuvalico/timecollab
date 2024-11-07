@@ -3,19 +3,20 @@ from classes.User import User
 from classes.Company import Company
 from classes.RC import RC
 from cmn_utils import *
-from cmn_defs import *
 from typing import List
 import bcrypt
 from cmn_utils import print_exception, datetime2iso, iso2datetime
 from flask_sqlalchemy import SQLAlchemy
-from cmn_defs import E_PERMISSIONS, E_RC
 from classes.User import User
-from classes.RC import RC
+from classes.RC import RC, E_RC
+from classes.BaseRepository import BaseRepository
+from classes.Permission import E_PERMISSIONS
 
 
-class CompanyRepository:
+
+class CompanyRepository(BaseRepository):
     def __init__(self, db: SQLAlchemy):
-        self.db = db
+        super().__init__(db)
 
     def get_all_companies(self) -> List[Company]:
         companies = CompanyModel.query.all()
@@ -23,6 +24,10 @@ class CompanyRepository:
     
     def get_all_active_companies(self) -> List[Company]:
         companies = CompanyModel.query.filter(CompanyModel.is_active == True).all()
+        return [company.to_class() for company in companies]
+    
+    def get_all_inactive_companies(self) -> List[Company]:
+        companies = CompanyModel.query.filter(CompanyModel.is_active == False).all()
         return [company.to_class() for company in companies]
     
     def get_company_admins(self, company_id: str) -> List[User]:
@@ -52,55 +57,36 @@ class CompanyRepository:
             return [user.to_class() for user in users]
         return []
     
-    def create_company(self,  company_name: str) -> RC:
-        try:
-            new_company: Company = Company(
-                company_id=None,
-                company_name=company_name,
-                is_active=True
-            )
-            
-            new_company_model = new_company.to_model()
+    # def create_company(self,  new_company: Company) -> RC:
+    #     try:
+    #         new_company_model = new_company.to_model()
 
-            # Add and commit using SQLAlchemy
-            self.db.session.add(new_company_model)
-            self.db.session.commit()
-            return RC(E_RC.RC_OK, f"Company {company_name} created succefully!")
+    #         return self._save(new_company_model)
         
-        except Exception as e:
-            self.db.session.rollback()  
-            print_exception(e)
-            return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
+    #     except Exception as e:
+    #         print_exception(e)
+    #         return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
         
-    def update_company(self, company: Company, company_name: str) -> RC:
-        try:
-            if not company:
-                return RC(E_RC.RC_INVALID_INPUT, f"Company {company_name} Update failed due to invalid imput")
+    # def update_company(self, company: Company) -> RC:
+    #     try:
+    #         if not company:
+    #             return RC(E_RC.RC_INVALID_INPUT, f"Company {company.company_name} Update failed due to invalid imput")
             
-            if company_name:
-                company.company_name = company_name
-
-            company_model: CompanyModel = company.to_model()
-            self.db.session.merge(company_model)
-            self.db.session.commit()
-            return RC(E_RC.RC_OK, f"Company {company_name} Updated Successfully")
+    #         company_model: CompanyModel = company.to_model()
+    #         return self._update(company_model)
         
-        except Exception as e:
-            self.db.session.rollback() 
-            print_exception(e)
-            return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
+    #     except Exception as e:
+    #         print_exception(e)
+    #         return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
         
-    def delete_company(self, company: Company) -> RC:
-        try:
-            company.is_active = False
+    # def delete_company(self, company: Company) -> RC:
+    #     try:
+    #         company.is_active = False
         
-            company_model: CompanyModel = company.to_model()
-            self.db.session.merge(company_model)
-            self.db.session.commit()
-            return RC(E_RC.RC_OK, f"Company {company.company_name} Deleted Successfully")
+    #         company_model: CompanyModel = company.to_model()
+    #         return self._delete(company_model)
         
-        except Exception as e:
-            self.db.session.rollback() 
-            print_exception(e)
-            return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
+    #     except Exception as e:
+    #         print_exception(e)
+    #         return RC(E_RC.RC_ERROR_DATABASE, "DB Exception")
     

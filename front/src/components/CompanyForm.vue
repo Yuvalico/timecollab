@@ -39,19 +39,17 @@ const submitForm = async () => {
   if (valid.value) {
     try {
       const method = isEditing.value ? 'put' : 'post';
-      const url = isEditing.value ? `${endpoints.companies.update}` : `${endpoints.companies.create}`;
-      // const url = isEditing.value
-      //   ? `http://localhost:3000/api/companies/update-company/${editingCompanyId}`
-      //   : 'http://localhost:3000/api/companies/create-company';
-      
-      // const method = isEditing.value ? 'PUT' : 'POST';
+      const url = isEditing.value 
+      ? `${endpoints.companies.update}`
+       : endpoints.companies.create;
+
       const data = isEditing.value ? 
         {
           company_id: editingCompanyId,
-          companyName: companyName.value,
+          company_name: companyName.value,
         } :
         {
-          companyName: companyName.value,
+          company_name: companyName.value,
         }
       const response = await api({
       method,

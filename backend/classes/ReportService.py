@@ -4,19 +4,33 @@ from classes.TimeStamp import TimeStamp
 from classes.CompanyRepository import CompanyRepository
 from classes.UserRepository import UserRepository
 from classes.TimeStampRepository import TimeStampRepository
-from cmn_defs import *
+from classes.Permission import Permission
+from classes.BaseServiceClass import BaseService
+from classes.ModelValidator import ModelValidator
+from classes.DomainClassFactory import DomainClassFactory
+from classes.RC import RC, E_RC
 from cmn_utils import *
 from datetime import datetime, timezone, timedelta
 import calendar
 
 
-class ReportService:
-    def __init__(self, user_repository: UserRepository, timestamp_repository: TimeStampRepository, company_repository: CompanyRepository):
+class ReportService(BaseService):
+    def __init__(self, user_repository: UserRepository, timestamp_repository: TimeStampRepository, company_repository: CompanyRepository, validator: ModelValidator, factory: DomainClassFactory):
+        super().__init__(validator, factory)
         self.user_repository: UserRepository = user_repository
         self.timestamp_repository: TimeStampRepository = timestamp_repository
         self.company_repository: CompanyRepository = company_repository
 
-    def user_report(self, user_email, date_range_type, selected_year, selected_month, start_date_str, end_date_str) -> dict | RC:
+    def user_report(self, user_email, date_range_type, selected_year, selected_month, start_date_str, \
+            end_date_str, user_permission: int, user_company_id: str, current_user_email: str) -> dict | RC:
+        
+        perm: Permission = Permission(user_permission)
+        if isinstance(perm, RC):
+            return perm
+        
+        if perm.is_employee() and user_email and user_email != current_user_email:
+             return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
+         
         result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
         if isinstance(result, RC):
             return result
@@ -26,6 +40,9 @@ class ReportService:
         user: User = self.user_repository.get_user_by_email(user_email)
         if isinstance (user, RC):
             return user
+        
+        if perm.is_employer() and (str(user.company_id) != str(user_company_id)):
+            return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
         
         time_stamps = self.timestamp_repository.get_range(start_date, end_date, user_email)
         if isinstance(time_stamps, RC):
@@ -38,7 +55,18 @@ class ReportService:
 
         return report_entry
 
-    def company_summary(self, company_id, date_range_type, selected_year, selected_month, start_date_str, end_date_str):
+    def company_summary(self, company_id: str, date_range_type: str, selected_year: str, selected_month: str, start_date_str: str, \
+                end_date_str: str, user_permission: int, user_company_id: str) -> dict|RC:
+        
+        perm: Permission = Permission(user_permission)
+        if isinstance(perm, RC):
+            return perm
+        
+        if perm.is_employee():
+            return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
+        
+        if perm.is_employer() and (str(user_company_id) != str(company_id)):
+            return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
         
         result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
         if isinstance(result, RC):
@@ -59,7 +87,14 @@ class ReportService:
 
         return report
 
-    def company_overview(self, date_range_type: str, selected_year: str, selected_month: str, start_date_str: str, end_date_str: str):
+    def company_overview(self, date_range_type: str, selected_year: str, selected_month: str, start_date_str: str, end_date_str: str, user_permission: int) -> dict| RC:
+        perm: Permission = Permission(user_permission)
+        if isinstance(perm, RC):
+            return perm
+        
+        if not perm.is_net_admin():
+            return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
+        
         result = self._set_dates_range(date_range_type, selected_year, selected_month, start_date_str, end_date_str)
         if isinstance(result, RC):
             return result
@@ -197,8 +232,8 @@ class ReportService:
             if not start_date_str or not end_date_str:
                 return RC(E_RC.RC_INVALID_INPUT, 'Start and end dates are required for custom reports')
             try:
-                start_date = iso2datetime(start_date_str),
-                end_date = iso2datetime(end_date_str),
+                start_date = iso2datetime(start_date_str)
+                end_date = iso2datetime(end_date_str)
                 if end_date < start_date:
                     return RC(E_RC.RC_INVALID_INPUT, 'Start date must earlier than end date')
                 

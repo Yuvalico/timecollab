@@ -132,7 +132,7 @@ function getAdminUser(companyID) {
   
   // Find the admin user with the matching companyID
   const adminUser = users.value.find(user => {
-    return user.company_id === companyID && user.permission === 1;
+    return user.company_id === companyID && (user.permission === 1 || user.permission === 0);
   });
 
   console.log('Admin user found:', adminUser);

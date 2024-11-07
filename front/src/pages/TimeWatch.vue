@@ -102,6 +102,7 @@ async function punchOut() {
     message.value = response.data.message;
     hasPunchIn.value = false;
     updateCalendar();
+    punchOutDescription.value = '';
   } catch (error) {
     if (error.response && error.response.data.action_required === 'manual_punch_in') {
       message.value = 'No punch-in found for today. Please manually add a punch-in entry.';

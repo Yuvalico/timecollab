@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from cmn_utils import print_exception, datetime2iso, iso2datetime
 from classes.Company import Company
+from classes.BaseDomainClass import BaseDomainClass
+
 
 @dataclass
-class User:
+class User(BaseDomainClass):
     email: str
     first_name: str
     last_name: str

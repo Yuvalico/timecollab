@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-
+from classes.BaseDomainClass import BaseDomainClass
 
 @dataclass
-class Company:
+class Company(BaseDomainClass):
     company_id: str
     company_name: str
     is_active: bool

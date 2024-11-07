@@ -3,11 +3,12 @@ from classes.User import User
 from cmn_utils import *
 from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
+from classes.BaseDomainClass import BaseDomainClass
 
 
 
 @dataclass
-class TimeStamp:
+class TimeStamp(BaseDomainClass):
     user_email: str
     entered_by: str
     punch_type: int

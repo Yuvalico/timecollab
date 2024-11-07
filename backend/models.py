@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from typing import List
 from cmn_utils import print_exception, datetime2iso, iso2datetime
-# from main import db  # Import the 'db' object from your main Flask file
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from flask_sqlalchemy import SQLAlchemy
@@ -11,10 +10,15 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from classes.User import User
 from classes.Company import Company
 from classes.TimeStamp import TimeStamp
+from abc import ABC, abstractmethod
 
 db = SQLAlchemy()
-
-class CompanyModel(db.Model):
+class ModelInterface():
+    @abstractmethod
+    def to_class(self):
+        raise NotImplementedError
+    
+class CompanyModel(db.Model, ModelInterface):
     __tablename__ = 'companies'
     company_id = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
     company_name = db.Column(db.String(255), nullable=False)
@@ -29,12 +33,12 @@ class CompanyModel(db.Model):
             is_active=self.is_active
         )
 
-class UserModel(db.Model):
+class UserModel(db.Model, ModelInterface):
     __tablename__ = 'users'
     email = db.Column(db.String(255), primary_key=True)
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
-    mobile_phone = db.Column(db.String(20))
+    mobile_phone = db.Column(db.String(11))
     company_id = db.Column(UUID(as_uuid=True), db.ForeignKey('companies.company_id'))
     role = db.Column(db.String(255))
     permission = db.Column(db.Integer)
@@ -44,7 +48,7 @@ class UserModel(db.Model):
     work_capacity = db.Column(db.Numeric)
     employment_start = db.Column(db.DateTime(timezone=True))
     employment_end = db.Column(db.DateTime(timezone=True))
-    weekend_choice = db.Column(db.String(20))
+    weekend_choice = db.Column(db.String(64))
 
     def to_class(self):
         return User(
@@ -65,7 +69,7 @@ class UserModel(db.Model):
             company=self.company.to_class(),
         )
         
-class TimeStampModel(db.Model):
+class TimeStampModel(db.Model, ModelInterface):
     __tablename__ = 'time_stamps'
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
     user_email = db.Column(db.ForeignKey('users.email'),nullable=False)
