@@ -28,6 +28,9 @@ const showRemoveUserDialog = ref(false);
 const userToRemove = ref(null);
 const employmentEndDate = ref(new Date()); 
 const today = new Date().toISOString().slice(0, 10); 
+const showReactivateUserDialog = ref(false);
+const userToReactivate = ref(null);
+const showDeletedUsers = ref(false);
 
 
 // Headers for tables
@@ -82,19 +85,78 @@ watch(() => users.value, (newUsers) => {
   console.log('users.value changed:', newUsers);
 });
 
+watch(() => showDeletedUsers.value, (newvalue) => {
+  console.log('showDeletedUsers.value changed:', newvalue);
+  fetchUsers()
+});
+
+
+const reactivateUser = (user) => {
+  userToReactivate.value = user;
+  showReactivateUserDialog.value = true;
+};
+
+const cancelReactivateUser = () => {
+  showReactivateUserDialog.value = false;
+  userToReactivate.value = null;
+};
+
+const toggleDeletedUsers = () => {
+  showDeletedUsers.value = !showDeletedUsers.value;
+  fetchUsers(); // Refresh the user list
+};
+
+const confirmReactivateUser = async () => {
+  try {
+    // const email = userToReactivate.value.email;
+    const method = 'put' 
+    const url = endpoints.users.reactivate
+      
+    // const response = await api.put(`${endpoints.users.reactivate}`, data={user_email: email}); // Assuming you have an update endpoint
+    const response = await api({
+      method,
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        user_email: userToReactivate.value.email,
+      },
+    });
+    if (response.status === 200) {
+      console.log('User reactivated successfully');
+      fetchUsers();
+    } else {
+      console.error('Failed to reactivate user');
+    }
+  } catch (error) {
+    console.error('Error reactivating user:', error);
+  } finally {
+    showReactivateUserDialog.value = false;
+    userToReactivate.value = null;
+    fetchUsers();
+  }
+};
+
 // Fetch users from the API
 async function fetchUsers() {
   try {
-    const userResponse = await api.get(`${endpoints.users.getActive}`);
-    console.log(userResponse.data)
-    users.value = (await userResponse.data).map(user => ({
-      ...user,
-      fullName: `${user.first_name} ${user.last_name}`,
-      actions: {
-        edit: () => editUser(user),
-        remove: () => removeUser(user),
-      },
-    }));
+    let userResponse;
+    if (!showDeletedUsers.value){
+      userResponse = await api.get(`${endpoints.users.getActive}`);
+    }
+    else{
+      userResponse = await api.get(`${endpoints.users.getNotActive}`);
+    }
+      console.log(userResponse.data)
+      users.value = (await userResponse.data).map(user => ({
+        ...user,
+        fullName: `${user.first_name} ${user.last_name}`,
+        actions: {
+          edit: () => editUser(user),
+          remove: () => removeUser(user),
+        },
+      }));
 
     console.log('Users fetched:', users.value);
   } catch (error) {
@@ -246,6 +308,7 @@ onMounted(() => {
           </span>
 
           <div v-if="authStore.isNetAdmin" class="d-flex align-center"> 
+            <VSwitch v-model="showDeletedUsers" :label="showDeletedUsers ? 'Show Active Users' : 'Show Inactive Users'" class="mr-4" /> 
             <VSelect
               v-model="selectedCompany"
               :items="companyOptions"
@@ -262,13 +325,23 @@ onMounted(() => {
           <template v-slot:item.actions="{ item }">
             <div class="actions-col" v-if="authStore.isNetAdmin">
               <IconBtn
+                v-if="!showDeletedUsers"
                 icon="ri-edit-line"
                 @click="item.actions.edit"
               />
               <IconBtn
+                v-if="!showDeletedUsers"
                 icon="ri-delete-bin-line"
                 @click="item.actions.remove"
               />
+              <VBtn 
+                v-if="showDeletedUsers" 
+                color="success" 
+                variant="outlined" 
+                size="small" 
+                @click="reactivateUser(item)">
+                + Reactivate
+              </VBtn>
             </div>
           </template>
           <template v-slot:item.employment_start="{ item }">
@@ -318,6 +391,22 @@ onMounted(() => {
         <VCardActions>
           <VBtn color="secondary" variant="outlined" @click="cancelRemoveUser">Cancel</VBtn>
           <VBtn color="error" @click="confirmRemoveUser">Remove</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+    <VDialog v-model="showReactivateUserDialog" persistent max-width="600px">
+      <VCard>
+        <VCardTitle>
+          <span class="headline">Reactivate User</span>
+        </VCardTitle>
+        <VCardText>
+          <div v-if="userToReactivate">
+            <p>Are you sure you want to reactivate <strong>{{ userToReactivate.first_name }} {{ userToReactivate.last_name }}</strong>?</p> 
+          </div>
+        </VCardText>
+        <VCardActions>
+          <VBtn color="secondary" variant="outlined" @click="cancelReactivateUser">Cancel</VBtn>
+          <VBtn color="success" @click="confirmReactivateUser">Reactivate</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>

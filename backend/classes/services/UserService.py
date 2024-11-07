@@ -148,6 +148,24 @@ class UserService(BaseService):
             return self._update(self.user_repository, user)
         
         return RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
+    
+    def reactivate_user(self, user_permission: int, user_to_reactivate_email: str) -> RC:
+        
+        perm: Permission = Permission(user_permission)
+        if isinstance(perm, RC):
+            return perm
+        
+        if not perm.is_net_admin():
+            RC(E_RC.RC_UNAUTHORIZED, "Unauthorized access")
+            
+        user: User | RC = self.user_repository.get_user_by_email(user_to_reactivate_email)
+        if isinstance(user, RC):
+            return user
+        
+        user.is_active = True
+        user.employment_end = None
+        
+        return self._update(self.user_repository, user)
 
     def get_user_by_email(self, user_permission: int, current_user_email: str, user_company_id, requested_user_email: str) -> RC|dict:
         

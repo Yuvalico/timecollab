@@ -128,6 +128,22 @@ def get_active_users():
     except Exception as e:
         print_exception(e)
         return jsonify({'error': 'Internal server error'}), E_RC.RC_ERROR_DATABASE
+    
+@users_blueprint.route('/not-active', methods=['GET'])
+@jwt_required() 
+def get_inactive_users():
+    try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+
+        user_data: dict = user_service.get_inactive_users(user_permission, user_company_id)
+        if isinstance(user_data, RC):
+            return user_data.to_json()
+            
+        return jsonify(user_data), E_RC.RC_OK
+
+    except Exception as e:
+        print_exception(e)
+        return jsonify({'error': 'Internal server error'}), E_RC.RC_ERROR_DATABASE
 
 # Get all users route
 @users_blueprint.route('/', methods=['GET'])
@@ -171,6 +187,22 @@ def change_password():
         new_password = data.get('new_password')
 
         rc: RC = user_service.change_password(user_permission, current_user_email, user_company_id, current_user_email, new_password)
+        
+        return rc.to_json()
+
+    except Exception as e:
+        print_exception(e)
+        return jsonify({'error': 'Failed to change password'}), E_RC.RC_ERROR_DATABASE
+    
+@users_blueprint.route('/reactivate-user', methods=['PUT'])
+@jwt_required()
+def reactivate_user():
+    try:
+        current_user_email, user_permission, user_company_id = extract_jwt()
+        data = request.get_json()
+        user_email = data.get('user_email')
+
+        rc: RC = user_service.reactivate_user(user_permission, user_email)
         
         return rc.to_json()
 
