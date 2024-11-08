@@ -43,7 +43,7 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
         <!-- eslint-enable -->
 
         <h1 class="font-weight-medium leading-normal text-xl text-uppercase">
-          TLV 300
+          <span style="color: #8c52ff;">T</span>ime<span style="color: #8c52ff;">T</span>racker
         </h1>
       </RouterLink>
 
