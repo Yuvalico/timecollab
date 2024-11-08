@@ -105,7 +105,8 @@ const handleLogin = async () => {
             v-html="logo"
           />
           <h2 class="font-weight-medium text-2xl text-uppercase">
-            TimeTracker
+            <span style="color: #8c52ff;">T</span>ime<span style="color: #8c52ff;">T</span>racker
+
           </h2>
         </RouterLink>
       </VCardItem>
