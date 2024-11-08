@@ -14,21 +14,21 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     heading: 'Time Tracking',
   }"
 />
-  <VerticalNavLink
-    v-if="authStore.isEmployer || authStore.isNetAdmin"
-    :item="{
-      title: 'Management',
-      icon: 'ri-team-line',
-      to: '/management',
-    }"
-    />
-  <VerticalNavLink
-    :item="{
-      title: 'TimeWatch',
-      icon: 'ri-calendar-schedule-line',
-      to: '/timewatch',
-    }"
-    />
+<VerticalNavLink
+:item="{
+  title: 'TimeWatch',
+  icon: 'ri-calendar-schedule-line',
+  to: '/timewatch',
+}"
+/>
+<VerticalNavLink
+  v-if="authStore.isEmployer || authStore.isNetAdmin"
+  :item="{
+    title: 'Management',
+    icon: 'ri-team-line',
+    to: '/management',
+  }"
+  />
   <VerticalNavLink
     :item="{
       title: 'Reports',
